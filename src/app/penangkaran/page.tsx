@@ -162,14 +162,9 @@ export default function PenangkaranPage() {
       </div>
 
       {/* Pagination & Cetak */}
-      <div className="mt-8 flex items-center justify-between pb-8">
-        {/* Cetak Button */}
-        <button className="flex items-center gap-2 rounded-xl bg-[#5B7943] hover:bg-[#446B2F] px-5 py-3 text-[14px] font-semibold text-white shadow-[0_4px_12px_-4px_rgba(91,121,67,0.5)] transition-colors">
-          <Printer className="h-[18px] w-[18px]" strokeWidth={2.5} />
-          Cetak
-        </button>
-
-        <div className="flex items-center gap-6">
+      <div className="mt-8 pb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        {/* Info + Pagination */}
+        <div className="flex items-center gap-4 justify-between sm:justify-end sm:order-2">
           <p className="text-[13px] text-gray-400 font-medium">
             Menampilkan 3 dari 3 data
           </p>
@@ -193,6 +188,12 @@ export default function PenangkaranPage() {
             </button>
           </div>
         </div>
+
+        {/* Cetak Button */}
+        <button className="sm:order-1 self-start flex items-center gap-2 rounded-xl bg-[#5B7943] hover:bg-[#446B2F] px-5 py-3 text-[14px] font-semibold text-white shadow-[0_4px_12px_-4px_rgba(91,121,67,0.5)] transition-colors">
+          <Printer className="h-[18px] w-[18px]" strokeWidth={2.5} />
+          Cetak
+        </button>
       </div>
 
       {/* Render Modal */}

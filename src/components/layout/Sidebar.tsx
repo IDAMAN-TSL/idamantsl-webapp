@@ -41,11 +41,31 @@ const navigation = [
   },
 ];
 
-export function Sidebar() {
+export function Sidebar({ 
+  isOpen = false, 
+  setIsOpen 
+}: { 
+  isOpen?: boolean; 
+  setIsOpen?: (val: boolean) => void;
+}) {
   const pathname = usePathname();
 
   return (
-    <div className="flex h-full w-72 flex-col border-r border-gray-200 bg-white">
+    <>
+      {/* Mobile Backdrop */}
+      {isOpen && (
+        <div 
+          className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm md:hidden"
+          onClick={() => setIsOpen?.(false)}
+        />
+      )}
+
+      {/* Sidebar Container */}
+      <div 
+        className={`fixed inset-y-0 left-0 z-50 flex h-full w-[280px] md:w-72 flex-col border-r border-gray-200 bg-white transform transition-transform duration-300 ease-in-out md:relative md:translate-x-0 ${
+          isOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
       {/* Logo Area */}
       <div className="flex h-[88px] items-center px-6">
         <div className="flex items-center gap-4">
@@ -74,6 +94,7 @@ export function Sidebar() {
             <Link
               key={item.name}
               href={item.href}
+              onClick={() => setIsOpen?.(false)}
               className={`group flex items-center justify-start gap-4 rounded-xl px-4 py-3.5 text-sm font-medium transition-colors ${
                 isActive
                   ? "bg-[#446B2F] text-white shadow-md shadow-[#446B2F]/20"
@@ -90,6 +111,7 @@ export function Sidebar() {
           );
         })}
       </nav>
-    </div>
+      </div>
+    </>
   );
 }
