@@ -2,11 +2,14 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Mail, Lock, EyeOff } from "lucide-react";
 import LogoIcon from "../../assets/icon/Logo.svg";
 import JunglePicture from "../../assets/picture/Gambar.jpg";
 
 export default function Home() {
+  const router = useRouter();
+
   return (
     <div className="relative min-h-screen flex items-center justify-center overflow-hidden font-sans">
       {/* Background Image Overlay */}
@@ -26,7 +29,9 @@ export default function Home() {
       <div className="relative z-10 w-full max-w-[480px] p-8 md:p-10 mx-4 rounded-3xl bg-white/10 backdrop-blur-md border border-white/30 shadow-2xl">
         
         <div className="flex justify-center mb-6">
-          <Image src={LogoIcon} alt="Logo BBKSDA JABAR" width={64} height={76} className="w-auto h-16 object-contain drop-shadow-md" priority />
+          <div className="flex items-center justify-center bg-white/20 backdrop-blur-md rounded-2xl shadow-lg border border-white/40 p-2 w-[84px] h-[84px]">
+            <Image src={LogoIcon} alt="Logo BBKSDA JABAR" width={64} height={64} className="w-full h-full object-contain drop-shadow-sm" priority />
+          </div>
         </div>
 
         {/* Titles */}
@@ -39,7 +44,10 @@ export default function Home() {
         </div>
 
         {/* Form */}
-        <form className="space-y-6" onSubmit={(e) => e.preventDefault()}>
+        <form className="space-y-6" onSubmit={(e) => {
+          e.preventDefault();
+          router.push("/dashboard");
+        }}>
           
           {/* Email field */}
           <div className="space-y-1.5">
@@ -81,7 +89,7 @@ export default function Home() {
           <div className="pt-2">
             <button 
               type="submit" 
-              className="w-full bg-[#446B2F] hover:bg-[#345224] text-white font-bold rounded-xl py-3.5 mt-2 transition-all shadow-[0_4px_14px_0_rgba(68,107,47,0.39)] hover:shadow-[0_6px_20px_rgba(68,107,47,0.23)] active:scale-[0.98] text-[0.95rem]"
+              className="w-full bg-[#446B2F] hover:bg-[#345224] text-white font-bold rounded-xl py-3.5 mt-2 transition-all shadow-[0_4px_14x_0_rgba(68,107,47,0.39)] hover:shadow-[0_6px_20px_rgba(68,107,47,0.23)] active:scale-[0.98] text-[0.95rem]"
             >
               Masuk
             </button>
