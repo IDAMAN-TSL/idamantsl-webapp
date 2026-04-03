@@ -1,63 +1,76 @@
 import Image from "next/image";
+import Link from "next/link";
+import LogoIcon from "../assets/icon/Logo.svg";
+import JunglePicture from "../assets/picture/Gambar.jpg";
 
-export default function Home() {
+export default function LandingPage() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div className="min-h-screen bg-white font-sans flex flex-col">
+      {/* Navigation */}
+      <nav className="w-full bg-white border-b border-gray-100 px-6 sm:px-12 py-4 flex items-center justify-between sticky top-0 z-50">
+        {/* Nav Left - Logo & Title */}
+        <div className="flex items-center gap-4">
+          <Image src={LogoIcon} alt="Logo BBKSDA JABAR" width={48} height={56} className="w-auto h-12 object-contain" priority />
+          <span className="font-extrabold text-[#111111] tracking-tight text-xl">IDAMAN TSL</span>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+        
+        {/* Nav Right - Button */}
+        <Link href="/login" className="bg-[#446B2F] hover:bg-[#345224] text-white font-bold px-7 py-2.5 rounded-xl text-[0.95rem] transition-all shadow-[0_4px_10px_0_rgba(68,107,47,0.3)] hover:shadow-[0_6px_15px_rgba(68,107,47,0.2)]">
+          Masuk
+        </Link>
+      </nav>
+
+      {/* Main Hero Section */}
+      <main className="flex-grow flex items-center justify-center bg-white relative overflow-hidden">
+         {/* Subtle background blob for warmth */}
+        <div className="absolute top-1/2 left-1/4 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-tr from-[#446B2F]/5 to-transparent rounded-full blur-[100px] -z-10" />
+
+        <div className="max-w-[1400px] mx-auto px-6 sm:px-12 py-12 md:py-20 flex flex-col lg:flex-row items-center gap-12 lg:gap-20 w-full">
+          
+          {/* Left Text Content */}
+          <div className="flex-1 space-y-6 md:space-y-8 text-center lg:text-left z-10 max-w-2xl mx-auto lg:mx-0">
+            {/* Badge */}
+            <div className="inline-block bg-[#f3f6ee] text-[#446B2F] px-6 py-3 rounded-full font-bold text-sm md:text-[0.95rem] shadow-sm border border-[#e1ead7]">
+              Balai Besar Konservasi Sumber Daya Alam Jawa Barat
+            </div>
+
+            {/* Headline */}
+            <h1 className="text-[2.75rem] md:text-6xl font-extrabold text-[#111111] leading-[1.15] tracking-tight">
+              Sistem Informasi Data <br className="hidden lg:block"/>
+              Pemanfaatan <span className="text-[#446B2F]">Tumbuhan &amp;</span><br className="hidden md:block"/>
+              {" "}<span className="text-[#446B2F]">Satwa Liar</span>
+            </h1>
+
+            {/* Sub-headline */}
+            <p className="text-gray-600 text-[1.1rem] md:text-[1.15rem] max-w-2xl mx-auto lg:mx-0 leading-[1.7] font-medium">
+              Portal resmi pengelolaan, verifikasi, dan pemantauan data tumbuhan dan
+              satwa liar di wilayah Jawa Barat yang terstruktur, terintegrasi, dan efisien untuk
+              keberlanjutan ekosistem.
+            </p>
+
+            {/* CTA Button */}
+            <div className="pt-2">
+              <Link href="/login" className="inline-block bg-[#446B2F] hover:bg-[#345224] text-white font-bold px-10 py-4 rounded-2xl transition-all shadow-[0_6px_20px_0_rgba(68,107,47,0.35)] hover:shadow-[0_8px_25px_rgba(68,107,47,0.25)] hover:-translate-y-0.5 text-[1.05rem]">
+                Masuk
+              </Link>
+            </div>
+          </div>
+
+          {/* Right Image Container */}
+          <div className="flex-1 w-full max-w-2xl lg:max-w-none relative mt-8 lg:mt-0 z-10">
+            <div className="relative rounded-[2rem] p-3 md:p-3.5 bg-[#f4f7ed] border border-[#dce6d0] shadow-[0_20px_60px_-15px_rgba(68,107,47,0.25)]">
+              <div className="relative w-full aspect-[16/10] md:aspect-[4/2.5] rounded-2xl overflow-hidden bg-gray-100 shadow-inner">
+                <Image 
+                  src={JunglePicture}
+                  alt="Jungle Landscape" 
+                  fill
+                  style={{ objectFit: "cover" }}
+                  priority
+                />
+              </div>
+            </div>
+          </div>
+
         </div>
       </main>
     </div>
