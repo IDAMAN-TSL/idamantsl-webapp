@@ -10,7 +10,11 @@ export default function LandingPage() {
       <nav className="w-full bg-white border-b border-gray-100 px-6 sm:px-12 py-4 flex items-center justify-between sticky top-0 z-50">
         {/* Nav Left - Logo & Title */}
         <div className="flex items-center gap-4">
-          <Image src={LogoIcon} alt="Logo BBKSDA JABAR" width={48} height={56} className="w-auto h-12 object-contain" priority />
+          <div 
+            className="flex items-center justify-center rounded-[14px] shadow-sm p-1.5 w-[56px] h-[56px] bg-gradient-to-br from-[#FAFCF5] to-[#E2ECD4] border border-[#f0f4e9]"
+          >
+            <Image src={LogoIcon} alt="Logo BBKSDA JABAR" width={44} height={44} className="w-full h-full object-contain" priority />
+          </div>
           <span className="font-extrabold text-[#111111] tracking-tight text-xl">IDAMAN TSL</span>
         </div>
         
