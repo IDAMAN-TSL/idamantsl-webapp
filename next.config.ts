@@ -2,7 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   output: 'export',
-  basePath: 'idamantsl-webapp',
+  basePath: '/idamantsl-webapp',
   images: {
     unoptimized: true,
     qualities: [25, 50, 75, 100],
