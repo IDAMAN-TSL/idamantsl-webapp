@@ -16,7 +16,7 @@ export default function PenangkaranPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   return (
-    <div className="flex flex-col gap-6 w-full max-w-6xl">
+    <div className="flex flex-col gap-6 w-full">
       {/* Page Header */}
       <div>
         <h1 className="text-[22px] font-bold tracking-tight text-gray-900">
@@ -48,7 +48,7 @@ export default function PenangkaranPage() {
         </button>
 
         {/* Tambah Button */}
-        <button 
+        <button
           onClick={() => setIsModalOpen(true)}
           className="flex items-center gap-2 rounded-xl bg-[#5B7943] hover:bg-[#446B2F] px-5 py-3.5 text-[14px] font-semibold text-white shadow-[0_4px_12px_-4px_rgba(91,121,67,0.5)] transition-colors"
         >
@@ -60,102 +60,173 @@ export default function PenangkaranPage() {
       {/* Table Section */}
       <div className="mt-2 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)]">
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
+          <table className="min-w-full border-collapse text-[12px]">
             <thead>
-              <tr className="divide-x divide-gray-200">
+              {/* Row 1 – Main headers */}
+              <tr className="bg-gray-50 border-b border-gray-200">
                 <th
-                  scope="col"
-                  className="px-4 py-4 text-center text-[13px] font-bold text-gray-900 w-16 whitespace-nowrap"
+                  rowSpan={2}
+                  className="border border-gray-200 px-2 py-2 text-center font-bold text-gray-800 w-10"
                 >
-                  No
+                  No.
                 </th>
                 <th
-                  scope="col"
-                  className="px-4 py-4 text-center text-[13px] font-bold text-gray-900 whitespace-nowrap"
+                  rowSpan={2}
+                  className="border border-gray-200 px-3 py-2 text-center font-bold text-gray-800 min-w-[130px]"
                 >
-                  Penangkaran
+                  Nama Unit<br />Penangkaran
                 </th>
                 <th
-                  scope="col"
-                  className="px-4 py-4 text-center text-[13px] font-bold text-gray-900 whitespace-nowrap"
+                  colSpan={2}
+                  className="border border-gray-200 px-3 py-2 text-center font-bold text-gray-800"
                 >
-                  Bidang Wilayah
+                  Surat Izin
                 </th>
                 <th
-                  scope="col"
-                  className="px-4 py-4 text-center text-[13px] font-bold text-gray-900 whitespace-nowrap"
+                  rowSpan={2}
+                  className="border border-gray-200 px-3 py-2 text-center font-bold text-gray-800 min-w-[80px]"
                 >
-                  Seksi Wilayah
+                  Penerbit
                 </th>
                 <th
-                  scope="col"
-                  className="px-4 py-4 text-center text-[13px] font-bold text-gray-900 whitespace-nowrap"
+                  rowSpan={2}
+                  className="border border-gray-200 px-3 py-2 text-center font-bold text-gray-800 min-w-[130px]"
                 >
-                  Nama TSL
+                  Nama Direktur/<br />Penanggung Jawab
                 </th>
                 <th
-                  scope="col"
-                  className="px-4 py-4 text-center text-[13px] font-bold text-gray-900 whitespace-nowrap"
+                  rowSpan={2}
+                  className="border border-gray-200 px-3 py-2 text-center font-bold text-gray-800 min-w-[110px]"
+                >
+                  Nomor Telepon/<br />Faximile
+                </th>
+                <th
+                  rowSpan={2}
+                  className="border border-gray-200 px-3 py-2 text-center font-bold text-gray-800 min-w-[110px]"
+                >
+                  Bidang KSDA<br />Wilayah
+                </th>
+                <th
+                  rowSpan={2}
+                  className="border border-gray-200 px-3 py-2 text-center font-bold text-gray-800 min-w-[110px]"
+                >
+                  Seksi Konservasi<br />Wilayah
+                </th>
+                <th
+                  rowSpan={2}
+                  className="border border-gray-200 px-3 py-2 text-center font-bold text-gray-800 min-w-[100px]"
+                >
+                  Lokasi Kantor
+                </th>
+                <th
+                  rowSpan={2}
+                  className="border border-gray-200 px-3 py-2 text-center font-bold text-gray-800 min-w-[110px]"
+                >
+                  Lokasi<br />Penangkaran
+                </th>
+                <th
+                  colSpan={2}
+                  className="border border-gray-200 px-3 py-2 text-center font-bold text-gray-800"
+                >
+                  Koordinat
+                </th>
+                <th
+                  rowSpan={2}
+                  className="border border-gray-200 px-3 py-2 text-center font-bold text-gray-800 min-w-[90px]"
+                >
+                  Jenis TSL
+                </th>
+                <th
+                  colSpan={2}
+                  className="border border-gray-200 px-3 py-2 text-center font-bold text-gray-800"
                 >
                   Status
                 </th>
                 <th
-                  scope="col"
-                  className="px-4 py-4 text-center text-[13px] font-bold text-gray-900 whitespace-nowrap w-24"
+                  rowSpan={2}
+                  className="border border-gray-200 px-3 py-2 text-center font-bold text-gray-800 w-16"
                 >
                   Aksi
                 </th>
               </tr>
+              {/* Row 2 – Sub headers */}
+              <tr className="bg-gray-50 border-b border-gray-200">
+                {/* Surat Izin sub */}
+                <th className="border border-gray-200 px-2 py-1.5 text-center font-semibold text-gray-700 min-w-[130px]">
+                  No. &amp; Tanggal SKP<br />Sertifikat Standar
+                </th>
+                <th className="border border-gray-200 px-2 py-1.5 text-center font-semibold text-gray-700 min-w-[100px]">
+                  Akhir masa<br />berlaku izin
+                </th>
+                {/* Koordinat sub */}
+                <th className="border border-gray-200 px-2 py-1.5 text-center font-semibold text-gray-700 min-w-[100px]">
+                  Lokasi<br />Penangkaran
+                </th>
+                <th className="border border-gray-200 px-2 py-1.5 text-center font-semibold text-gray-700 min-w-[50px]">
+                  &nbsp;
+                </th>
+                {/* Status sub */}
+                <th className="border border-gray-200 px-2 py-1.5 text-center font-semibold text-gray-700 min-w-[90px]">
+                  Perlindungan<br />Nasional
+                </th>
+                <th className="border border-gray-200 px-2 py-1.5 text-center font-semibold text-gray-700 min-w-[80px]">
+                  dalam<br />CITES
+                </th>
+              </tr>
+              {/* Row 3 – Number row */}
+              <tr className="bg-gray-100 border-b border-gray-200 text-gray-500">
+                {[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16].map((n) => (
+                  <td
+                    key={n}
+                    className="border border-gray-200 px-2 py-1 text-center text-[11px] font-medium"
+                  >
+                    {n}
+                  </td>
+                ))}
+              </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200 bg-white">
-              {/* Row 1 */}
-              <tr className="divide-x divide-gray-200">
-                <td className="whitespace-nowrap px-4 py-3 text-center text-sm text-gray-500 h-[52px]"></td>
-                <td className="whitespace-nowrap px-4 py-3 text-center text-sm text-gray-500"></td>
-                <td className="whitespace-nowrap px-4 py-3 text-center text-sm text-gray-500"></td>
-                <td className="whitespace-nowrap px-4 py-3 text-center text-sm text-gray-500"></td>
-                <td className="whitespace-nowrap px-4 py-3 text-center text-sm text-gray-500"></td>
-                <td className="whitespace-nowrap px-4 py-3 text-center text-sm text-gray-500"></td>
-                <td className="whitespace-nowrap px-4 py-3 text-center text-sm text-gray-500">
-                  <div className="flex justify-center h-full items-center min-h-[44px]">
-                    <button className="flex h-7 w-7 items-center justify-center rounded-full bg-[#5B7943] text-white hover:bg-[#446B2F] transition-colors shadow-sm cursor-pointer">
-                      <Pencil className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
-                </td>
-              </tr>
-              {/* Row 2 */}
-              <tr className="divide-x divide-gray-200">
-                <td className="whitespace-nowrap px-4 py-3 text-center text-sm text-gray-500 h-[52px]"></td>
-                <td className="whitespace-nowrap px-4 py-3 text-center text-sm text-gray-500"></td>
-                <td className="whitespace-nowrap px-4 py-3 text-center text-sm text-gray-500"></td>
-                <td className="whitespace-nowrap px-4 py-3 text-center text-sm text-gray-500"></td>
-                <td className="whitespace-nowrap px-4 py-3 text-center text-sm text-gray-500"></td>
-                <td className="whitespace-nowrap px-4 py-3 text-center text-sm text-gray-500"></td>
-                <td className="whitespace-nowrap px-4 py-3 text-center text-sm text-gray-500">
-                  <div className="flex justify-center h-full items-center min-h-[44px]">
-                    <button className="flex h-7 w-7 items-center justify-center rounded-full bg-[#5B7943] text-white hover:bg-[#446B2F] transition-colors shadow-sm cursor-pointer">
-                      <Pencil className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
-                </td>
-              </tr>
-              {/* Row 3 */}
-              <tr className="divide-x divide-gray-200">
-                <td className="whitespace-nowrap px-4 py-3 text-center text-sm text-gray-500 h-[52px]"></td>
-                <td className="whitespace-nowrap px-4 py-3 text-center text-sm text-gray-500"></td>
-                <td className="whitespace-nowrap px-4 py-3 text-center text-sm text-gray-500"></td>
-                <td className="whitespace-nowrap px-4 py-3 text-center text-sm text-gray-500"></td>
-                <td className="whitespace-nowrap px-4 py-3 text-center text-sm text-gray-500"></td>
-                <td className="whitespace-nowrap px-4 py-3 text-center text-sm text-gray-500"></td>
-                <td className="whitespace-nowrap px-4 py-3 text-center text-sm text-gray-500">
-                  <div className="flex justify-center h-full items-center min-h-[44px]">
-                    <button className="flex h-7 w-7 items-center justify-center rounded-full bg-[#5B7943] text-white hover:bg-[#446B2F] transition-colors shadow-sm cursor-pointer">
-                      <Pencil className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
-                </td>
-              </tr>
+            <tbody className="divide-y divide-gray-100 bg-white">
+              {[1, 2, 3].map((row) => (
+                <tr key={row} className="hover:bg-gray-50 transition-colors">
+                  <td className="border border-gray-100 px-2 py-3 text-center text-gray-500 h-[52px]">{row}</td>
+                  {/* Nama Unit Penangkaran */}
+                  <td className="border border-gray-100 px-2 py-3 text-gray-500"></td>
+                  {/* No & Tgl SKP */}
+                  <td className="border border-gray-100 px-2 py-3 text-gray-500"></td>
+                  {/* Akhir masa berlaku */}
+                  <td className="border border-gray-100 px-2 py-3 text-gray-500"></td>
+                  {/* Penerbit */}
+                  <td className="border border-gray-100 px-2 py-3 text-gray-500"></td>
+                  {/* Nama Direktur */}
+                  <td className="border border-gray-100 px-2 py-3 text-gray-500"></td>
+                  {/* No Telepon */}
+                  <td className="border border-gray-100 px-2 py-3 text-gray-500"></td>
+                  {/* Bidang KSDA Wilayah */}
+                  <td className="border border-gray-100 px-2 py-3 text-gray-500"></td>
+                  {/* Seksi Konservasi Wilayah */}
+                  <td className="border border-gray-100 px-2 py-3 text-gray-500"></td>
+                  {/* Lokasi Kantor */}
+                  <td className="border border-gray-100 px-2 py-3 text-gray-500"></td>
+                  {/* Lokasi Penangkaran */}
+                  <td className="border border-gray-100 px-2 py-3 text-gray-500"></td>
+                  {/* Koordinat Lokasi Penangkaran */}
+                  <td className="border border-gray-100 px-2 py-3 text-gray-500"></td>
+                  {/* Koordinat (kosong) */}
+                  <td className="border border-gray-100 px-2 py-3 text-gray-500"></td>
+                  {/* Jenis TSL */}
+                  <td className="border border-gray-100 px-2 py-3 text-gray-500"></td>
+                  {/* Status Perlindungan Nasional */}
+                  <td className="border border-gray-100 px-2 py-3 text-gray-500"></td>
+                  {/* Status dalam CITES */}
+                  <td className="border border-gray-100 px-2 py-3 text-center">
+                    <div className="flex justify-center items-center">
+                      <button className="flex h-7 w-7 items-center justify-center rounded-full bg-[#5B7943] text-white hover:bg-[#446B2F] transition-colors shadow-sm cursor-pointer">
+                        <Pencil className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
@@ -197,9 +268,9 @@ export default function PenangkaranPage() {
       </div>
 
       {/* Render Modal */}
-      <AddDataModal 
-        isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)} 
+      <AddDataModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
       />
     </div>
   );
