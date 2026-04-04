@@ -173,18 +173,8 @@ export default function PenangkaranPage() {
                   dalam<br />CITES
                 </th>
               </tr>
-              {/* Row 3 – Number row */}
-              <tr className="bg-gray-100 border-b border-gray-200 text-gray-500">
-                {[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16].map((n) => (
-                  <td
-                    key={n}
-                    className="border border-gray-200 px-2 py-1 text-center text-[11px] font-medium"
-                  >
-                    {n}
-                  </td>
-                ))}
-              </tr>
             </thead>
+            
             <tbody className="divide-y divide-gray-100 bg-white">
               {[1, 2, 3].map((row) => (
                 <tr key={row} className="hover:bg-gray-50 transition-colors">
@@ -219,6 +209,9 @@ export default function PenangkaranPage() {
                   <td className="border border-gray-100 px-2 py-3 text-gray-500"></td>
                   {/* Status dalam CITES */}
                   <td className="border border-gray-100 px-2 py-3 text-center">
+                    
+                  </td>
+                  <td>
                     <div className="flex justify-center items-center">
                       <button className="flex h-7 w-7 items-center justify-center rounded-full bg-[#5B7943] text-white hover:bg-[#446B2F] transition-colors shadow-sm cursor-pointer">
                         <Pencil className="h-3.5 w-3.5" />
