@@ -46,11 +46,12 @@ export function AddDataModal({ isOpen, onClose }: AddDataModalProps) {
                   <Calendar className="h-[18px] w-[18px] text-white" strokeWidth={2.5} />
                 </div>
                 <input
-                  type="text"
-                  className="h-12 w-full rounded-[14px] border border-white/50 pl-[52px] pr-4 outline-none focus:ring-2 focus:ring-[#5B7943]/50 transition-all text-sm text-gray-800"
+                  type="date"
+                  className="h-12 w-full rounded-[14px] border border-white/50 pl-[52px] pr-4 outline-none focus:ring-2 focus:ring-[#5B7943]/50 transition-all text-sm text-gray-800 cursor-pointer"
                   style={{
                     backgroundColor: "#EEF0E5",
                     boxShadow: "0 6px 12px -2px rgba(0,0,0,0.06), inset 0 2px 4px rgba(255,255,255,0.5)",
+                    colorScheme: "light",
                   }}
                 />
               </div>
@@ -85,17 +86,10 @@ export function AddDataModal({ isOpen, onClose }: AddDataModalProps) {
             {/* Split Row: Status Perlindungan Nasional & Status CITES */}
             <div className="grid grid-cols-2 gap-4">
               <InputField label="Status Perlindungan Nasional" />
-              <InputField label="Status CITES" />
-            </div>
-
-            <InputField label="Nama Direktur / Penanggung Jawab" />
-            <InputField label="No Telepon" />
-
-            {/* Split Row: Bidang Wilayah & Seksi Wilayah with selects */}
-            <div className="grid grid-cols-2 gap-4">
+              {/* Status CITES Dropdown */}
               <div className="flex flex-col gap-2">
                 <label className="text-[13px] font-extrabold text-[#111] ml-1">
-                  Bidang Wilayah
+                  Status CITES
                 </label>
                 <div className="relative">
                   <select
@@ -105,7 +99,39 @@ export function AddDataModal({ isOpen, onClose }: AddDataModalProps) {
                       boxShadow: "0 6px 12px -2px rgba(0,0,0,0.06), inset 0 2px 4px rgba(255,255,255,0.5)",
                     }}
                   >
-                    <option value=""></option>
+                    <option value="">-- Pilih Status --</option>
+                    <option value="appendix-i">Appendix I</option>
+                    <option value="appendix-ii">Appendix II</option>
+                    <option value="appendix-iii">Appendix III</option>
+                  </select>
+                  <div className="absolute right-1.5 top-1/2 -translate-y-1/2 h-[30px] w-[30px] rounded-[8px] bg-[#5B7943] flex items-center justify-center pointer-events-none">
+                    <ChevronDown className="h-4 w-4 text-white" strokeWidth={2.5} />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <InputField label="Nama Direktur / Penanggung Jawab" />
+            <InputField label="No Telepon" />
+
+            {/* Split Row: Bidang KSDA Wilayah & Seksi Konservasi Wilayah with selects */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="flex flex-col gap-2">
+                <label className="text-[13px] font-extrabold text-[#111] ml-1">
+                  Bidang KSDA Wilayah
+                </label>
+                <div className="relative">
+                  <select
+                    className="h-12 w-full rounded-[14px] border border-white/50 pl-4 pr-[44px] outline-none appearance-none focus:ring-2 focus:ring-[#5B7943]/50 transition-all text-sm text-gray-800"
+                    style={{
+                      backgroundColor: "#EEF0E5",
+                      boxShadow: "0 6px 12px -2px rgba(0,0,0,0.06), inset 0 2px 4px rgba(255,255,255,0.5)",
+                    }}
+                  >
+                    <option value="">-- Pilih Bidang --</option>
+                    <option value="I">I – Bogor</option>
+                    <option value="II">II – Soreang</option>
+                    <option value="III">III – Ciamis</option>
                   </select>
                   <div className="absolute right-1.5 top-1/2 -translate-y-1/2 h-[30px] w-[30px] rounded-[8px] bg-[#5B7943] flex items-center justify-center pointer-events-none">
                     <ChevronDown className="h-4 w-4 text-white" strokeWidth={2.5} />
@@ -114,7 +140,7 @@ export function AddDataModal({ isOpen, onClose }: AddDataModalProps) {
               </div>
               <div className="flex flex-col gap-2">
                 <label className="text-[13px] font-extrabold text-[#111] ml-1">
-                  Seksi Wilayah
+                  Seksi Konservasi Wilayah
                 </label>
                 <div className="relative">
                   <select
@@ -124,7 +150,13 @@ export function AddDataModal({ isOpen, onClose }: AddDataModalProps) {
                       boxShadow: "0 6px 12px -2px rgba(0,0,0,0.06), inset 0 2px 4px rgba(255,255,255,0.5)",
                     }}
                   >
-                    <option value=""></option>
+                    <option value="">-- Pilih Seksi --</option>
+                    <option value="I">I – Serang</option>
+                    <option value="II">II – Bogor</option>
+                    <option value="III">III – Soreang</option>
+                    <option value="IV">IV – Purwakarta</option>
+                    <option value="V">V – Garut</option>
+                    <option value="VI">VI – Tasikmalaya</option>
                   </select>
                   <div className="absolute right-1.5 top-1/2 -translate-y-1/2 h-[30px] w-[30px] rounded-[8px] bg-[#5B7943] flex items-center justify-center pointer-events-none">
                     <ChevronDown className="h-4 w-4 text-white" strokeWidth={2.5} />
