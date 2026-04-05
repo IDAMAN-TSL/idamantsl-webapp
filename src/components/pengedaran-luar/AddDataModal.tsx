@@ -9,6 +9,7 @@ interface AddDataModalProps {
 
 export function AddDataModal({ isOpen, onClose }: AddDataModalProps) {
   const [uploadOpen, setUploadOpen] = useState(false);
+
   if (!isOpen) return null;
 
   return (
@@ -21,7 +22,7 @@ export function AddDataModal({ isOpen, onClose }: AddDataModalProps) {
         {/* Header */}
         <div className="text-center mb-8">
           <h2 className="text-[22px] font-extrabold text-gray-900 tracking-tight">
-            Formulir Penangkaran TSL
+            Formulir Pengedaran TSL Luar Negeri
           </h2>
           <p className="text-sm font-medium text-gray-600 mt-1">
             Isi data dengan baik dan benar
@@ -32,9 +33,9 @@ export function AddDataModal({ isOpen, onClose }: AddDataModalProps) {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
           {/* Left Column */}
           <div className="flex flex-col gap-6">
-            <InputField label="Nama Unit Penangkaran" />
-            <InputField label="Alamat Penangkaran" />
-            <InputField label="Koordinat Lokasi Penangkaran" />
+            <InputField label="Nama Unit Pengedaran" />
+            <InputField label="Alamat Pengedaran" />
+            <InputField label="Koordinat Lokasi Pengedaran" />
             <InputField label="No. SK / Sertifikat Standar" />
 
             {/* Tanggal SK */}
@@ -80,6 +81,9 @@ export function AddDataModal({ isOpen, onClose }: AddDataModalProps) {
                 />
               </div>
             </div>
+
+            {/* Negara Tujuan */}
+            <InputField label="Negara Tujuan" />
           </div>
 
           {/* Right Column */}
@@ -138,7 +142,7 @@ export function AddDataModal({ isOpen, onClose }: AddDataModalProps) {
             <InputField label="Nama Direktur / Penanggung Jawab" />
             <InputField label="No Telepon" />
 
-            {/* Split Row: Bidang KSDA Wilayah & Seksi Konservasi Wilayah with selects */}
+            {/* Split Row: Bidang KSDA Wilayah & Seksi Konservasi Wilayah */}
             <div className="grid grid-cols-2 gap-4">
               <div className="flex flex-col gap-2">
                 <label className="text-[13px] font-extrabold text-[#111] ml-1">

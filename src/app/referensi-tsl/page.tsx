@@ -11,10 +11,10 @@ import {
   ChevronRight,
   Download,
 } from "lucide-react";
-import { AddDataModal } from "@/components/penangkaran/AddDataModal";
-import { UpdateDataModal } from "@/components/penangkaran/UpdateDataModal";
+import { AddDataModal } from "@/components/referensi-tsl/AddDataModal";
+import { UpdateDataModal } from "@/components/referensi-tsl/UpdateDataModal";
 
-export default function PenangkaranPage() {
+export default function ReferensiTSLPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
 
@@ -23,10 +23,10 @@ export default function PenangkaranPage() {
       {/* Page Header */}
       <div>
         <h1 className="text-[22px] font-bold tracking-tight text-gray-900">
-          Penangkaran TSL
+          Referensi TSL
         </h1>
         <p className="mt-1 text-[15px] text-gray-700">
-          Kelola data penangkaran TSL
+          Kelola data referensi tumbuhan dan satwa liar dilindungi
         </p>
       </div>
 
@@ -40,7 +40,7 @@ export default function PenangkaranPage() {
           <input
             type="text"
             className="block w-full rounded-xl border-0 ring-1 ring-inset ring-gray-200 py-3.5 pl-11 pr-3 text-[14px] text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-[#55733A] bg-white shadow-[0_2px_10px_-4px_rgba(0,0,0,0.1)] outline-none transition-all"
-            placeholder="Cari nama penangkaran, nama TSL, atau wilayah ..."
+            placeholder="Cari nama TSL, spesies, atau status ..."
           />
         </div>
 
@@ -61,7 +61,10 @@ export default function PenangkaranPage() {
 
         {/* Unduh Template Button */}
         <button className="flex items-center gap-2 rounded-xl border-2 border-[#5B7943] bg-white hover:bg-[#5B7943] px-5 py-3 text-[14px] font-semibold text-[#5B7943] hover:text-white shadow-sm transition-all group">
-          <Download className="h-[18px] w-[18px] text-[#5B7943] group-hover:text-white transition-colors" strokeWidth={2.5} />
+          <Download
+            className="h-[18px] w-[18px] text-[#5B7943] group-hover:text-white transition-colors"
+            strokeWidth={2.5}
+          />
           Unduh Template
         </button>
       </div>
@@ -83,55 +86,7 @@ export default function PenangkaranPage() {
                   rowSpan={2}
                   className="border border-gray-200 px-3 py-2 text-center font-bold text-gray-800 min-w-[130px]"
                 >
-                  Nama Unit<br />Penangkaran
-                </th>
-                <th
-                  colSpan={3}
-                  className="border border-gray-200 px-3 py-2 text-center font-bold text-gray-800"
-                >
-                  Surat Izin
-                </th>
-                <th
-                  rowSpan={2}
-                  className="border border-gray-200 px-3 py-2 text-center font-bold text-gray-800 min-w-[80px]"
-                >
-                  Penerbit
-                </th>
-                <th
-                  rowSpan={2}
-                  className="border border-gray-200 px-3 py-2 text-center font-bold text-gray-800 min-w-[130px]"
-                >
-                  Nama Direktur/<br />Penanggung Jawab
-                </th>
-                <th
-                  rowSpan={2}
-                  className="border border-gray-200 px-3 py-2 text-center font-bold text-gray-800 min-w-[110px]"
-                >
-                  Nomor Telepon/<br />Faximile
-                </th>
-                <th
-                  rowSpan={2}
-                  className="border border-gray-200 px-3 py-2 text-center font-bold text-gray-800 min-w-[110px]"
-                >
-                  Bidang KSDA<br />Wilayah
-                </th>
-                <th
-                  rowSpan={2}
-                  className="border border-gray-200 px-3 py-2 text-center font-bold text-gray-800 min-w-[110px]"
-                >
-                  Seksi Konservasi<br />Wilayah
-                </th>
-                <th
-                  rowSpan={2}
-                  className="border border-gray-200 px-3 py-2 text-center font-bold text-gray-800 min-w-[100px]"
-                >
-                  Lokasi Kantor
-                </th>
-                <th
-                  colSpan={2}
-                  className="border border-gray-200 px-3 py-2 text-center font-bold text-gray-800"
-                >
-                  Lokasi Penangkaran
+                  Nama TSL
                 </th>
                 <th
                   rowSpan={2}
@@ -139,6 +94,14 @@ export default function PenangkaranPage() {
                 >
                   Jenis TSL
                 </th>
+                {/* Klasifikasi group */}
+                <th
+                  colSpan={7}
+                  className="border border-gray-200 px-3 py-2 text-center font-bold text-gray-800"
+                >
+                  Klasifikasi
+                </th>
+                {/* Status group */}
                 <th
                   colSpan={2}
                   className="border border-gray-200 px-3 py-2 text-center font-bold text-gray-800"
@@ -147,76 +110,77 @@ export default function PenangkaranPage() {
                 </th>
                 <th
                   rowSpan={2}
-                  className="border border-gray-200 px-3 py-2 text-center font-bold text-gray-800 w-16"
+                  className="border border-gray-200 px-3 py-2 text-center font-bold text-gray-800 w-20"
                 >
                   Aksi
                 </th>
               </tr>
+
               {/* Row 2 – Sub headers */}
               <tr className="bg-gray-50 border-b border-gray-200">
-                {/* Surat Izin sub */}
-                <th className="border border-gray-200 px-2 py-1.5 text-center font-semibold text-gray-700 min-w-[110px]">
-                  No. SK
-                </th>
-                <th className="border border-gray-200 px-2 py-1.5 text-center font-semibold text-gray-700 min-w-[110px]">
-                  Tanggal SK
-                </th>
-                <th className="border border-gray-200 px-2 py-1.5 text-center font-semibold text-gray-700 min-w-[100px]">
-                  Akhir masa<br />berlaku izin
-                </th>
-                {/* Lokasi Penangkaran sub */}
-                <th className="border border-gray-200 px-2 py-1.5 text-center font-semibold text-gray-700 min-w-[120px]">
-                  Alamat
-                </th>
-                <th className="border border-gray-200 px-2 py-1.5 text-center font-semibold text-gray-700 min-w-[110px]">
-                  Koordinat
-                </th>
-                {/* Status sub */}
-                <th className="border border-gray-200 px-2 py-1.5 text-center font-semibold text-gray-700 min-w-[90px]">
-                  Perlindungan<br />Nasional
+                {/* Klasifikasi sub */}
+                <th className="border border-gray-200 px-2 py-1.5 text-center font-semibold text-gray-700 min-w-[80px]">
+                  Kingdom
                 </th>
                 <th className="border border-gray-200 px-2 py-1.5 text-center font-semibold text-gray-700 min-w-[80px]">
-                  dalam<br />CITES
+                  Filum
+                </th>
+                <th className="border border-gray-200 px-2 py-1.5 text-center font-semibold text-gray-700 min-w-[80px]">
+                  Kelas
+                </th>
+                <th className="border border-gray-200 px-2 py-1.5 text-center font-semibold text-gray-700 min-w-[80px]">
+                  Ordo
+                </th>
+                <th className="border border-gray-200 px-2 py-1.5 text-center font-semibold text-gray-700 min-w-[80px]">
+                  Famili
+                </th>
+                <th className="border border-gray-200 px-2 py-1.5 text-center font-semibold text-gray-700 min-w-[80px]">
+                  Genus
+                </th>
+                <th className="border border-gray-200 px-2 py-1.5 text-center font-semibold text-gray-700 min-w-[100px]">
+                  Spesies
+                </th>
+                {/* Status sub */}
+                <th className="border border-gray-200 px-2 py-1.5 text-center font-semibold text-gray-700 min-w-[120px]">
+                  Perlindungan Nasional
+                </th>
+                <th className="border border-gray-200 px-2 py-1.5 text-center font-semibold text-gray-700 min-w-[100px]">
+                  CITES
                 </th>
               </tr>
             </thead>
-            
+
             <tbody className="divide-y divide-gray-100 bg-white">
               {[1, 2, 3].map((row) => (
                 <tr key={row} className="hover:bg-gray-50 transition-colors">
-                  <td className="border border-gray-100 px-2 py-3 text-center text-gray-500 h-[52px]">{row}</td>
-                  {/* Nama Unit Penangkaran */}
+                  <td className="border border-gray-100 px-2 py-3 text-center text-gray-500 h-[52px]">
+                    {row}
+                  </td>
+                  {/* nama_tsl */}
                   <td className="border border-gray-100 px-2 py-3 text-gray-500"></td>
-                  {/* No. SK */}
+                  {/* jenis_tsl */}
+                  <td className="border border-gray-100 px-2 py-3 text-center text-gray-500"></td>
+                  {/* kingdom */}
                   <td className="border border-gray-100 px-2 py-3 text-gray-500"></td>
-                  {/* Tanggal SK */}
+                  {/* filum */}
                   <td className="border border-gray-100 px-2 py-3 text-gray-500"></td>
-                  {/* Akhir masa berlaku */}
+                  {/* kelas */}
                   <td className="border border-gray-100 px-2 py-3 text-gray-500"></td>
-                  {/* Penerbit */}
+                  {/* ordo */}
                   <td className="border border-gray-100 px-2 py-3 text-gray-500"></td>
-                  {/* Nama Direktur */}
+                  {/* famili */}
                   <td className="border border-gray-100 px-2 py-3 text-gray-500"></td>
-                  {/* No Telepon */}
+                  {/* genus */}
                   <td className="border border-gray-100 px-2 py-3 text-gray-500"></td>
-                  {/* Bidang KSDA Wilayah */}
-                  <td className="border border-gray-100 px-2 py-3 text-gray-500"></td>
-                  {/* Seksi Konservasi Wilayah */}
-                  <td className="border border-gray-100 px-2 py-3 text-gray-500"></td>
-                  {/* Lokasi Kantor */}
-                  <td className="border border-gray-100 px-2 py-3 text-gray-500"></td>
-                  {/* Lokasi Penangkaran – Alamat */}
-                  <td className="border border-gray-100 px-2 py-3 text-gray-500"></td>
-                  {/* Lokasi Penangkaran – Koordinat */}
-                  <td className="border border-gray-100 px-2 py-3 text-gray-500"></td>
-                  {/* Jenis TSL */}
-                  <td className="border border-gray-100 px-2 py-3 text-gray-500"></td>
-                  {/* Status Perlindungan Nasional */}
-                  <td className="border border-gray-100 px-2 py-3 text-gray-500"></td>
-                  {/* Status dalam CITES */}
-                  <td className="border border-gray-100 px-2 py-3 text-center"></td>
-                  <td>
-                    <div className="flex justify-center items-center">
+                  {/* spesies */}
+                  <td className="border border-gray-100 px-2 py-3 text-gray-500 italic"></td>
+                  {/* status_perlindungan */}
+                  <td className="border border-gray-100 px-2 py-3 text-center text-gray-500"></td>
+                  {/* status_cites */}
+                  <td className="border border-gray-100 px-2 py-3 text-center text-gray-500"></td>
+                  {/* Aksi */}
+                  <td className="border border-gray-100 px-2 py-3">
+                    <div className="flex justify-center items-center gap-1.5">
                       <button
                         onClick={() => setIsUpdateModalOpen(true)}
                         className="flex h-7 w-7 items-center justify-center rounded-full bg-[#5B7943] text-white hover:bg-[#446B2F] transition-colors shadow-sm cursor-pointer"
