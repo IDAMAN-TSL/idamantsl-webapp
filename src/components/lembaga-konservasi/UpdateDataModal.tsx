@@ -10,8 +10,8 @@ export function UpdateDataModal({ isOpen, onClose }: UpdateDataModalProps) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto overflow-x-hidden bg-black/40 backdrop-blur-sm p-4 md:p-8">
-      <div className="w-full max-w-5xl rounded-[32px] p-8 md:p-10 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.3)] relative" style={{ backgroundColor: "#edf0deff" }}>
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto overflow-x-hidden bg-black/40 backdrop-blur-sm p-4 md:p-8">
+      <div className="my-auto w-full max-w-5xl rounded-[32px] p-8 md:p-10 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.3)] relative" style={{ backgroundColor: "#edf0deff" }}>
         <div className="text-center mb-8">
           <h2 className="text-[22px] font-extrabold text-gray-900 tracking-tight">Perbarui Data Lembaga Konservasi TSL</h2>
           <p className="text-sm font-medium text-gray-600 mt-1">Perbarui data dengan baik dan benar</p>
