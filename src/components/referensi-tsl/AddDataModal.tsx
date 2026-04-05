@@ -72,11 +72,11 @@ export function AddDataModal({ isOpen, onClose }: AddDataModalProps) {
         </div>
 
         {/* Footer Actions */}
-        <div className="mt-10 flex items-center justify-between gap-4">
+        <div className="mt-10 flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-3">
           {/* Kiri: Unggah */}
           <button
             onClick={() => setUploadOpen(true)}
-            className="flex items-center gap-2 rounded-xl bg-[#5B7943] hover:bg-[#4a6336] px-6 py-3.5 text-sm font-bold text-white shadow-[0_4px_14px_rgba(91,121,67,0.3)] transition-all active:scale-95"
+            className="flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-[#5B7943] hover:bg-[#4a6336] px-6 py-3.5 text-sm font-bold text-white shadow-[0_4px_14px_rgba(91,121,67,0.3)] transition-all active:scale-95"
           >
             <Upload className="h-5 w-5" strokeWidth={2.5} />
             Unggah
@@ -85,12 +85,12 @@ export function AddDataModal({ isOpen, onClose }: AddDataModalProps) {
           <div className="flex items-center gap-3">
             <button
               onClick={onClose}
-              className="flex items-center gap-2 rounded-xl bg-amber-500 hover:bg-amber-600 px-6 py-3.5 text-sm font-bold text-white shadow-[0_4px_14px_rgba(245,158,11,0.35)] transition-all active:scale-95"
+              className="flex flex-1 sm:flex-none items-center justify-center gap-2 rounded-xl bg-amber-500 hover:bg-amber-600 px-6 py-3.5 text-sm font-bold text-white shadow-[0_4px_14px_rgba(245,158,11,0.35)] transition-all active:scale-95"
             >
               <X className="h-5 w-5" strokeWidth={2.5} />
               Batal
             </button>
-            <button className="flex items-center gap-2 rounded-xl bg-[#5B7943] hover:bg-[#4a6336] px-6 py-3.5 text-sm font-bold text-white shadow-[0_4px_14px_rgba(91,121,67,0.3)] transition-all active:scale-95">
+            <button className="flex flex-1 sm:flex-none items-center justify-center gap-2 rounded-xl bg-[#5B7943] hover:bg-[#4a6336] px-6 py-3.5 text-sm font-bold text-white shadow-[0_4px_14px_rgba(91,121,67,0.3)] transition-all active:scale-95">
               <Save className="h-5 w-5" strokeWidth={2.5} />
               Simpan
             </button>

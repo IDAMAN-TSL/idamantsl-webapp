@@ -26,7 +26,7 @@ export function UploadDocModal({ isOpen, onClose }: UploadDocModalProps) {
 
   return (
     /* Backdrop — sits above the parent modal (z-[60]) */
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/30 backdrop-blur-[2px]">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/30 backdrop-blur-[2px]">
       <div
         className="relative w-full max-w-sm rounded-2xl bg-white p-6 shadow-[0_24px_48px_-8px_rgba(0,0,0,0.25)]"
         style={{ backgroundColor: "#ffffff" }}
@@ -53,7 +53,7 @@ export function UploadDocModal({ isOpen, onClose }: UploadDocModalProps) {
         </p>
 
         {/* File picker row */}
-        <div className="mt-5 flex items-center gap-3">
+        <div className="mt-5 flex flex-col sm:flex-row sm:items-center gap-3">
           {/* Hidden input */}
           <input
             ref={fileInputRef}
@@ -67,24 +67,26 @@ export function UploadDocModal({ isOpen, onClose }: UploadDocModalProps) {
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            className="flex items-center gap-2 rounded-xl bg-[#5B7943] hover:bg-[#4a6336] px-4 py-2.5 text-[13px] font-bold text-white shadow-[0_4px_10px_rgba(91,121,67,0.25)] transition-all active:scale-95"
+            className="flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-[#5B7943] hover:bg-[#4a6336] px-4 py-3 sm:py-2.5 text-[13px] font-bold text-white shadow-[0_4px_10px_rgba(91,121,67,0.25)] transition-all active:scale-95"
           >
             <FileText className="h-4 w-4" strokeWidth={2.5} />
             Pilih file
           </button>
 
           {/* File name display */}
-          <span className="flex-1 truncate rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5 text-[13px] text-gray-500">
-            {selectedFile ? selectedFile.name : ""}
-          </span>
+          <div className="flex w-full sm:flex-1 h-11 sm:h-10 items-center overflow-hidden rounded-xl border border-gray-200 bg-gray-50 px-3 text-[13px] text-gray-500">
+            <span className="truncate w-full">
+              {selectedFile ? selectedFile.name : "Belum ada file dipilih"}
+            </span>
+          </div>
         </div>
 
         {/* Footer: Unggah button aligned right */}
-        <div className="mt-5 flex justify-end">
+        <div className="mt-8 flex justify-end">
           <button
             type="button"
             onClick={handleClose}
-            className="flex items-center gap-2 rounded-xl bg-[#5B7943] hover:bg-[#4a6336] px-5 py-2.5 text-[13px] font-bold text-white shadow-[0_4px_10px_rgba(91,121,67,0.25)] transition-all active:scale-95"
+            className="flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-[#5B7943] hover:bg-[#4a6336] px-6 py-3.5 sm:px-5 sm:py-2.5 text-sm sm:text-[13px] font-bold text-white shadow-[0_4px_10px_rgba(91,121,67,0.25)] transition-all active:scale-95"
           >
             <Upload className="h-4 w-4" strokeWidth={2.5} />
             Unggah

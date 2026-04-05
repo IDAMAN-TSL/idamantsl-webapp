@@ -31,9 +31,9 @@ export default function PenangkaranPage() {
       </div>
 
       {/* Actions Row */}
-      <div className="flex items-center gap-4 mt-2">
-        {/* Search */}
-        <div className="relative flex-1 max-w-xl">
+      <div className="flex flex-wrap items-center gap-3 mt-2">
+        {/* Search – full width on mobile, expands on larger screens */}
+        <div className="relative w-full sm:flex-1 sm:max-w-xl order-1">
           <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5">
             <Search className="h-5 w-5 text-gray-500" aria-hidden="true" />
           </div>
@@ -44,26 +44,29 @@ export default function PenangkaranPage() {
           />
         </div>
 
-        {/* Filter Button */}
-        <button className="flex items-center gap-2 rounded-xl bg-[#5B7943] hover:bg-[#446B2F] px-5 py-3.5 text-[14px] font-semibold text-white shadow-[0_4px_12px_-4px_rgba(91,121,67,0.5)] transition-colors">
-          <Filter className="h-[18px] w-[18px]" strokeWidth={2.5} />
-          Filter
-        </button>
+        {/* Button group – wraps below search on mobile */}
+        <div className="flex flex-wrap items-center gap-3 order-2 w-full sm:w-auto">
+          {/* Filter Button */}
+          <button className="flex flex-1 sm:flex-none items-center justify-center gap-2 rounded-xl bg-[#5B7943] hover:bg-[#446B2F] px-5 py-3.5 text-[14px] font-semibold text-white shadow-[0_4px_12px_-4px_rgba(91,121,67,0.5)] transition-colors">
+            <Filter className="h-[18px] w-[18px]" strokeWidth={2.5} />
+            Filter
+          </button>
 
-        {/* Tambah Button */}
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className="flex items-center gap-2 rounded-xl bg-[#5B7943] hover:bg-[#446B2F] px-5 py-3.5 text-[14px] font-semibold text-white shadow-[0_4px_12px_-4px_rgba(91,121,67,0.5)] transition-colors"
-        >
-          <Plus className="h-[18px] w-[18px]" strokeWidth={2.5} />
-          Tambah
-        </button>
+          {/* Tambah Button */}
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="flex flex-1 sm:flex-none items-center justify-center gap-2 rounded-xl bg-[#5B7943] hover:bg-[#446B2F] px-5 py-3.5 text-[14px] font-semibold text-white shadow-[0_4px_12px_-4px_rgba(91,121,67,0.5)] transition-colors"
+          >
+            <Plus className="h-[18px] w-[18px]" strokeWidth={2.5} />
+            Tambah
+          </button>
 
-        {/* Unduh Template Button */}
-        <button className="flex items-center gap-2 rounded-xl border-2 border-[#5B7943] bg-white hover:bg-[#5B7943] px-5 py-3 text-[14px] font-semibold text-[#5B7943] hover:text-white shadow-sm transition-all group">
-          <Download className="h-[18px] w-[18px] text-[#5B7943] group-hover:text-white transition-colors" strokeWidth={2.5} />
-          Unduh Template
-        </button>
+          {/* Unduh Template Button – full width on mobile */}
+          <button className="flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl border-2 border-[#5B7943] bg-white hover:bg-[#5B7943] px-5 py-3 text-[14px] font-semibold text-[#5B7943] hover:text-white shadow-sm transition-all group">
+            <Download className="h-[18px] w-[18px] text-[#5B7943] group-hover:text-white transition-colors" strokeWidth={2.5} />
+            Unduh Template
+          </button>
+        </div>
       </div>
 
       {/* Table Section */}
@@ -234,6 +237,12 @@ export default function PenangkaranPage() {
 
       {/* Pagination & Cetak */}
       <div className="mt-8 pb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        {/* Cetak Button */}
+        <button className="sm:order-1 self-start flex items-center gap-2 rounded-xl bg-[#5B7943] hover:bg-[#446B2F] px-5 py-3 text-[14px] font-semibold text-white shadow-[0_4px_12px_-4px_rgba(91,121,67,0.5)] transition-colors">
+          <Printer className="h-[18px] w-[18px]" strokeWidth={2.5} />
+          Cetak
+        </button>
+
         {/* Info + Pagination */}
         <div className="flex items-center gap-4 justify-between sm:justify-end sm:order-2">
           <p className="text-[13px] text-gray-400 font-medium">
@@ -259,12 +268,6 @@ export default function PenangkaranPage() {
             </button>
           </div>
         </div>
-
-        {/* Cetak Button */}
-        <button className="sm:order-1 self-start flex items-center gap-2 rounded-xl bg-[#5B7943] hover:bg-[#446B2F] px-5 py-3 text-[14px] font-semibold text-white shadow-[0_4px_12px_-4px_rgba(91,121,67,0.5)] transition-colors">
-          <Printer className="h-[18px] w-[18px]" strokeWidth={2.5} />
-          Cetak
-        </button>
       </div>
 
       {/* Render Modal */}
