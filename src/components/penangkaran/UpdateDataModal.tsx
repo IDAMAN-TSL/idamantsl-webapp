@@ -2,13 +2,12 @@ import React, { useState } from "react";
 import { X, Save, Calendar, ChevronDown, Trash2, Upload } from "lucide-react";
 import { UploadDocModal } from "@/components/ui/UploadDocModal";
 
-interface AddDataModalProps {
+interface UpdateDataModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-export function AddDataModal({ isOpen, onClose }: AddDataModalProps) {
-  const [uploadOpen, setUploadOpen] = useState(false);
+export function UpdateDataModal({ isOpen, onClose }: UpdateDataModalProps) {
   if (!isOpen) return null;
 
   return (
@@ -21,10 +20,10 @@ export function AddDataModal({ isOpen, onClose }: AddDataModalProps) {
         {/* Header */}
         <div className="text-center mb-8">
           <h2 className="text-[22px] font-extrabold text-gray-900 tracking-tight">
-            Formulir Penangkaran TSL
+            Perbarui Data Penangkaran TSL
           </h2>
           <p className="text-sm font-medium text-gray-600 mt-1">
-            Isi data dengan baik dan benar
+            Perbarui data dengan baik dan benar
           </p>
         </div>
 
@@ -60,7 +59,7 @@ export function AddDataModal({ isOpen, onClose }: AddDataModalProps) {
 
             <InputField label="Penerbit" />
 
-            {/* Akhir Masa Berlaku Izin + Icon */}
+            {/* Akhir Masa Berlaku Izin */}
             <div className="flex flex-col gap-2">
               <label className="text-[13px] font-extrabold text-[#111] ml-1">
                 Akhir Masa Berlaku Izin
@@ -138,7 +137,7 @@ export function AddDataModal({ isOpen, onClose }: AddDataModalProps) {
             <InputField label="Nama Direktur / Penanggung Jawab" />
             <InputField label="No Telepon" />
 
-            {/* Split Row: Bidang KSDA Wilayah & Seksi Konservasi Wilayah with selects */}
+            {/* Split Row: Bidang KSDA Wilayah & Seksi Konservasi Wilayah */}
             <div className="grid grid-cols-2 gap-4">
               <div className="flex flex-col gap-2">
                 <label className="text-[13px] font-extrabold text-[#111] ml-1">
@@ -193,13 +192,10 @@ export function AddDataModal({ isOpen, onClose }: AddDataModalProps) {
 
         {/* Footer Actions */}
         <div className="mt-12 flex items-center justify-between gap-4">
-          {/* Kiri: Unggah */}
-          <button
-            onClick={() => setUploadOpen(true)}
-            className="flex items-center gap-2 rounded-xl bg-[#5B7943] hover:bg-[#4a6336] px-6 py-3.5 text-sm font-bold text-white shadow-[0_4px_14px_rgba(91,121,67,0.3)] transition-all active:scale-95"
-          >
-            <Upload className="h-5 w-5" strokeWidth={2.5} />
-            Unggah
+          {/* Kiri: Hapus */}
+          <button className="flex items-center gap-2 rounded-xl bg-red-600 hover:bg-red-700 px-6 py-3.5 text-sm font-bold text-white shadow-[0_4px_14px_rgba(220,38,38,0.3)] transition-all active:scale-95">
+            <Trash2 className="h-5 w-5" strokeWidth={2.5} />
+            Hapus
           </button>
           {/* Kanan: Batal + Simpan */}
           <div className="flex items-center gap-3">
@@ -216,15 +212,11 @@ export function AddDataModal({ isOpen, onClose }: AddDataModalProps) {
             </button>
           </div>
         </div>
-
-        {/* Upload Doc Modal */}
-        <UploadDocModal isOpen={uploadOpen} onClose={() => setUploadOpen(false)} />
       </div>
     </div>
   );
 }
 
-{/* Helper component for generic inputs */}
 function InputField({ label }: { label: string }) {
   return (
     <div className="flex flex-col gap-2">

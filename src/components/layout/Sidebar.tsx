@@ -19,20 +19,20 @@ const navigation = [
   { name: "Penangkaran TSL", href: "/penangkaran", icon: Leaf },
   {
     name: "Pengedaran TSL Dalam Negeri",
-    href: "/dashboard/pengedaran-dalam",
+    href: "/pengedaran-dalam",
     icon: Globe,
   },
   {
     name: "Pengedaran TSL Luar Negeri",
-    href: "/dashboard/pengedaran-luar",
+    href: "/pengedaran-luar",
     icon: Globe,
   },
   {
     name: "Lembaga Konservasi TSL",
-    href: "/dashboard/lembaga",
+    href: "/lembaga-konservasi",
     icon: Building,
   },
-  { name: "Referensi TSL", href: "/dashboard/referensi", icon: FileText },
+  { name: "Referensi TSL", href: "/referensi-tsl", icon: FileText },
   { name: "Verifikasi", href: "/dashboard/verifikasi", icon: BadgeCheck },
   {
     name: "Manajemen Pengguna",

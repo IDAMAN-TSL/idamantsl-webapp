@@ -9,6 +9,7 @@ interface AddDataModalProps {
 
 export function AddDataModal({ isOpen, onClose }: AddDataModalProps) {
   const [uploadOpen, setUploadOpen] = useState(false);
+
   if (!isOpen) return null;
 
   return (
@@ -21,7 +22,7 @@ export function AddDataModal({ isOpen, onClose }: AddDataModalProps) {
         {/* Header */}
         <div className="text-center mb-8">
           <h2 className="text-[22px] font-extrabold text-gray-900 tracking-tight">
-            Formulir Penangkaran TSL
+            Formulir Lembaga Konservasi TSL
           </h2>
           <p className="text-sm font-medium text-gray-600 mt-1">
             Isi data dengan baik dan benar
@@ -30,11 +31,11 @@ export function AddDataModal({ isOpen, onClose }: AddDataModalProps) {
 
         {/* Form Body - 2 Columns */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
-          {/* Left Column */}
+          {/* Left Column — 6 fields */}
           <div className="flex flex-col gap-6">
-            <InputField label="Nama Unit Penangkaran" />
-            <InputField label="Alamat Penangkaran" />
-            <InputField label="Koordinat Lokasi Penangkaran" />
+            <InputField label="Nama Unit Lembaga" />
+            <InputField label="Alamat Lembaga" />
+            <InputField label="Koordinat Lokasi Lembaga" />
             <InputField label="No. SK / Sertifikat Standar" />
 
             {/* Tanggal SK */}
@@ -59,8 +60,11 @@ export function AddDataModal({ isOpen, onClose }: AddDataModalProps) {
             </div>
 
             <InputField label="Penerbit" />
+          </div>
 
-            {/* Akhir Masa Berlaku Izin + Icon */}
+          {/* Right Column — 5 items */}
+          <div className="flex flex-col gap-6">
+            {/* Akhir Masa Berlaku Izin */}
             <div className="flex flex-col gap-2">
               <label className="text-[13px] font-extrabold text-[#111] ml-1">
                 Akhir Masa Berlaku Izin
@@ -80,14 +84,14 @@ export function AddDataModal({ isOpen, onClose }: AddDataModalProps) {
                 />
               </div>
             </div>
-          </div>
 
-          {/* Right Column */}
-          <div className="flex flex-col gap-6">
-            {/* Jenis TSL Select */}
+            <InputField label="Nama Direktur / Penanggung Jawab" />
+            <InputField label="No Telepon" />
+
+            {/* Status — single dropdown */}
             <div className="flex flex-col gap-2">
               <label className="text-[13px] font-extrabold text-[#111] ml-1">
-                Jenis TSL
+                Status
               </label>
               <div className="relative">
                 <select
@@ -97,7 +101,10 @@ export function AddDataModal({ isOpen, onClose }: AddDataModalProps) {
                     boxShadow: "0 6px 12px -2px rgba(0,0,0,0.06), inset 0 2px 4px rgba(255,255,255,0.5)",
                   }}
                 >
-                  <option value=""></option>
+                  <option value="">-- Pilih Status --</option>
+                  <option value="aktif">Aktif</option>
+                  <option value="tidak-aktif">Tidak Aktif</option>
+                  <option value="proses">Dalam Proses</option>
                 </select>
                 <div className="absolute right-1.5 top-1/2 -translate-y-1/2 h-[34px] w-[34px] rounded-[10px] bg-[#5B7943] flex items-center justify-center pointer-events-none">
                   <ChevronDown className="h-[18px] w-[18px] text-white" strokeWidth={2.5} />
@@ -105,40 +112,7 @@ export function AddDataModal({ isOpen, onClose }: AddDataModalProps) {
               </div>
             </div>
 
-            <InputField label="Nama TSL" />
-
-            {/* Split Row: Status Perlindungan Nasional & Status CITES */}
-            <div className="grid grid-cols-2 gap-4">
-              <InputField label="Status Perlindungan Nasional" />
-              {/* Status CITES Dropdown */}
-              <div className="flex flex-col gap-2">
-                <label className="text-[13px] font-extrabold text-[#111] ml-1">
-                  Status CITES
-                </label>
-                <div className="relative">
-                  <select
-                    className="h-12 w-full rounded-[14px] border border-white/50 pl-4 pr-[44px] outline-none appearance-none focus:ring-2 focus:ring-[#5B7943]/50 transition-all text-sm text-gray-800"
-                    style={{
-                      backgroundColor: "#EEF0E5",
-                      boxShadow: "0 6px 12px -2px rgba(0,0,0,0.06), inset 0 2px 4px rgba(255,255,255,0.5)",
-                    }}
-                  >
-                    <option value="">-- Pilih Status --</option>
-                    <option value="appendix-i">Appendix I</option>
-                    <option value="appendix-ii">Appendix II</option>
-                    <option value="appendix-iii">Appendix III</option>
-                  </select>
-                  <div className="absolute right-1.5 top-1/2 -translate-y-1/2 h-[30px] w-[30px] rounded-[8px] bg-[#5B7943] flex items-center justify-center pointer-events-none">
-                    <ChevronDown className="h-4 w-4 text-white" strokeWidth={2.5} />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <InputField label="Nama Direktur / Penanggung Jawab" />
-            <InputField label="No Telepon" />
-
-            {/* Split Row: Bidang KSDA Wilayah & Seksi Konservasi Wilayah with selects */}
+            {/* Split Row: Bidang KSDA Wilayah & Seksi Konservasi Wilayah */}
             <div className="grid grid-cols-2 gap-4">
               <div className="flex flex-col gap-2">
                 <label className="text-[13px] font-extrabold text-[#111] ml-1">

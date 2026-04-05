@@ -11,10 +11,10 @@ import {
   ChevronRight,
   Download,
 } from "lucide-react";
-import { AddDataModal } from "@/components/penangkaran/AddDataModal";
-import { UpdateDataModal } from "@/components/penangkaran/UpdateDataModal";
+import { AddDataModal } from "@/components/lembaga-konservasi/AddDataModal";
+import { UpdateDataModal } from "@/components/lembaga-konservasi/UpdateDataModal";
 
-export default function PenangkaranPage() {
+export default function LembagaKonservasiPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
 
@@ -23,10 +23,10 @@ export default function PenangkaranPage() {
       {/* Page Header */}
       <div>
         <h1 className="text-[22px] font-bold tracking-tight text-gray-900">
-          Penangkaran TSL
+          Lembaga Konservasi TSL
         </h1>
         <p className="mt-1 text-[15px] text-gray-700">
-          Kelola data penangkaran TSL
+          Kelola data lembaga konservasi tumbuhan dan satwa liar
         </p>
       </div>
 
@@ -40,7 +40,7 @@ export default function PenangkaranPage() {
           <input
             type="text"
             className="block w-full rounded-xl border-0 ring-1 ring-inset ring-gray-200 py-3.5 pl-11 pr-3 text-[14px] text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-[#55733A] bg-white shadow-[0_2px_10px_-4px_rgba(0,0,0,0.1)] outline-none transition-all"
-            placeholder="Cari nama penangkaran, nama TSL, atau wilayah ..."
+            placeholder="Cari nama lembaga, nama TSL, atau lokasi ..."
           />
         </div>
 
@@ -83,7 +83,7 @@ export default function PenangkaranPage() {
                   rowSpan={2}
                   className="border border-gray-200 px-3 py-2 text-center font-bold text-gray-800 min-w-[130px]"
                 >
-                  Nama Unit<br />Penangkaran
+                  Nama Unit<br />Lembaga
                 </th>
                 <th
                   colSpan={3}
@@ -127,21 +127,17 @@ export default function PenangkaranPage() {
                 >
                   Lokasi Kantor
                 </th>
+                {/* Lokasi Lembaga — 2 sub-kolom */}
                 <th
                   colSpan={2}
                   className="border border-gray-200 px-3 py-2 text-center font-bold text-gray-800"
                 >
-                  Lokasi Penangkaran
+                  Lokasi Lembaga
                 </th>
+                {/* Status — satu kolom, tanpa sub */}
                 <th
                   rowSpan={2}
                   className="border border-gray-200 px-3 py-2 text-center font-bold text-gray-800 min-w-[90px]"
-                >
-                  Jenis TSL
-                </th>
-                <th
-                  colSpan={2}
-                  className="border border-gray-200 px-3 py-2 text-center font-bold text-gray-800"
                 >
                   Status
                 </th>
@@ -164,28 +160,21 @@ export default function PenangkaranPage() {
                 <th className="border border-gray-200 px-2 py-1.5 text-center font-semibold text-gray-700 min-w-[100px]">
                   Akhir masa<br />berlaku izin
                 </th>
-                {/* Lokasi Penangkaran sub */}
+                {/* Lokasi Lembaga sub */}
                 <th className="border border-gray-200 px-2 py-1.5 text-center font-semibold text-gray-700 min-w-[120px]">
                   Alamat
                 </th>
                 <th className="border border-gray-200 px-2 py-1.5 text-center font-semibold text-gray-700 min-w-[110px]">
                   Koordinat
                 </th>
-                {/* Status sub */}
-                <th className="border border-gray-200 px-2 py-1.5 text-center font-semibold text-gray-700 min-w-[90px]">
-                  Perlindungan<br />Nasional
-                </th>
-                <th className="border border-gray-200 px-2 py-1.5 text-center font-semibold text-gray-700 min-w-[80px]">
-                  dalam<br />CITES
-                </th>
               </tr>
             </thead>
-            
+
             <tbody className="divide-y divide-gray-100 bg-white">
               {[1, 2, 3].map((row) => (
                 <tr key={row} className="hover:bg-gray-50 transition-colors">
                   <td className="border border-gray-100 px-2 py-3 text-center text-gray-500 h-[52px]">{row}</td>
-                  {/* Nama Unit Penangkaran */}
+                  {/* Nama Unit Lembaga */}
                   <td className="border border-gray-100 px-2 py-3 text-gray-500"></td>
                   {/* No. SK */}
                   <td className="border border-gray-100 px-2 py-3 text-gray-500"></td>
@@ -205,16 +194,13 @@ export default function PenangkaranPage() {
                   <td className="border border-gray-100 px-2 py-3 text-gray-500"></td>
                   {/* Lokasi Kantor */}
                   <td className="border border-gray-100 px-2 py-3 text-gray-500"></td>
-                  {/* Lokasi Penangkaran – Alamat */}
+                  {/* Lokasi Lembaga – Alamat */}
                   <td className="border border-gray-100 px-2 py-3 text-gray-500"></td>
-                  {/* Lokasi Penangkaran – Koordinat */}
+                  {/* Lokasi Lembaga – Koordinat */}
                   <td className="border border-gray-100 px-2 py-3 text-gray-500"></td>
-                  {/* Jenis TSL */}
-                  <td className="border border-gray-100 px-2 py-3 text-gray-500"></td>
-                  {/* Status Perlindungan Nasional */}
-                  <td className="border border-gray-100 px-2 py-3 text-gray-500"></td>
-                  {/* Status dalam CITES */}
-                  <td className="border border-gray-100 px-2 py-3 text-center"></td>
+                  {/* Status */}
+                  <td className="border border-gray-100 px-2 py-3 text-center text-gray-500"></td>
+                  {/* Aksi */}
                   <td>
                     <div className="flex justify-center items-center">
                       <button
