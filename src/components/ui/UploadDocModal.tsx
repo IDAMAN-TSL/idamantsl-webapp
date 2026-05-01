@@ -8,7 +8,7 @@ interface UploadDocModalProps {
   onClose: () => void;
 }
 
-export function UploadDocModal({ isOpen, onClose }: UploadDocModalProps) {
+export function UploadDocModal({ isOpen, onClose }: Readonly<UploadDocModalProps>) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
@@ -25,70 +25,65 @@ export function UploadDocModal({ isOpen, onClose }: UploadDocModalProps) {
   };
 
   return (
-    /* Backdrop — sits above the parent modal (z-[60]) */
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/30 backdrop-blur-[2px]">
+    <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/35 p-4 backdrop-blur-[2px]">
       <div
-        className="relative w-full max-w-sm rounded-2xl bg-white p-6 shadow-[0_24px_48px_-8px_rgba(0,0,0,0.25)]"
-        style={{ backgroundColor: "#ffffff" }}
+        className="relative w-full max-w-140 rounded-[22px] bg-white px-6 py-5 shadow-[0_20px_50px_-15px_rgba(0,0,0,0.28)]"
       >
-        {/* Close button */}
         <button
           onClick={handleClose}
           className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700"
+          aria-label="Tutup upload"
         >
           <X className="h-5 w-5" strokeWidth={2.5} />
         </button>
 
-        {/* Icon */}
-        <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-[#EEF0E5]">
-          <FileText className="h-6 w-6 text-[#5B7943]" strokeWidth={2} />
+        <div className="flex items-start gap-3 pr-8">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-[#D5DB9C] bg-[#F5F6E5] text-[#8E9E25]">
+            <FileText className="h-5 w-5" strokeWidth={2.2} />
+          </div>
+
+          <div className="pt-0.5">
+            <h3 className="text-[15px] font-semibold text-gray-900">Unggah File</h3>
+          </div>
         </div>
 
-        {/* Title & description */}
-        <h3 className="text-[15px] font-extrabold text-gray-900">
-          Unggah file data
-        </h3>
-        <p className="mt-1 text-[13px] text-gray-500">
-          Pastikan file .xlxs dan data seperti pada formulir
+        <p className="mt-4 text-[12px] text-gray-400">
+          Pastikan file bertipe .pdf atau .csv dan data seperti pada formulir
         </p>
 
-        {/* File picker row */}
-        <div className="mt-5 flex flex-col sm:flex-row sm:items-center gap-3">
-          {/* Hidden input */}
+        <div className="mt-4">
           <input
             ref={fileInputRef}
             type="file"
-            accept=".xlsx,.xls,.xlxs"
+            accept=".pdf,.csv"
             className="hidden"
             onChange={handleFileChange}
           />
 
-          {/* "Pilih file" button */}
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            className="flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-[#5B7943] hover:bg-[#4a6336] px-4 py-3 sm:py-2.5 text-[13px] font-bold text-white shadow-[0_4px_10px_rgba(91,121,67,0.25)] transition-all active:scale-95"
-          >
-            <FileText className="h-4 w-4" strokeWidth={2.5} />
-            Pilih file
-          </button>
-
-          {/* File name display */}
-          <div className="flex w-full sm:flex-1 h-11 sm:h-10 items-center overflow-hidden rounded-xl border border-gray-200 bg-gray-50 px-3 text-[13px] text-gray-500">
-            <span className="truncate w-full">
-              {selectedFile ? selectedFile.name : "Belum ada file dipilih"}
-            </span>
+          <div className="flex h-10 items-stretch overflow-hidden rounded-md border border-gray-200 bg-white">
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="inline-flex items-center gap-2 border-r border-gray-200 bg-[#F5F6E5] px-3 text-[13px] font-medium text-[#8E9E25] transition-colors hover:bg-[#eef1d1]"
+            >
+              <FileText className="h-4 w-4" strokeWidth={2.2} />
+              Pilih file
+            </button>
+            <div className="flex min-w-0 flex-1 items-center px-3 text-[13px] text-gray-400">
+              <span className="truncate">
+                {selectedFile ? selectedFile.name : ""}
+              </span>
+            </div>
           </div>
         </div>
 
-        {/* Footer: Unggah button aligned right */}
-        <div className="mt-8 flex justify-end">
+        <div className="mt-6 flex justify-end">
           <button
             type="button"
             onClick={handleClose}
-            className="flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-[#5B7943] hover:bg-[#4a6336] px-6 py-3.5 sm:px-5 sm:py-2.5 text-sm sm:text-[13px] font-bold text-white shadow-[0_4px_10px_rgba(91,121,67,0.25)] transition-all active:scale-95"
+            className="inline-flex items-center justify-center gap-2 rounded-md bg-[#F5F6E5] px-4 py-2 text-[13px] font-medium text-[#8E9E25] transition-colors hover:bg-[#eef1d1]"
           >
-            <Upload className="h-4 w-4" strokeWidth={2.5} />
+            <Upload className="h-4 w-4" strokeWidth={2.2} />
             Unggah
           </button>
         </div>
