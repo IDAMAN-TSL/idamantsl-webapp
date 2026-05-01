@@ -19,7 +19,7 @@ export function UpdateDataModal({ isOpen, onClose }: UpdateDataModalProps) {
         {/* Header */}
         <div className="text-center mb-8">
           <h2 className="text-[22px] font-extrabold text-gray-900 tracking-tight">
-            Perbarui Data Pengedaran TSL Dalam Negeri
+            Perbarui Data Pengedar DN TSL
           </h2>
           <p className="text-sm font-medium text-gray-600 mt-1">
             Perbarui data dengan baik dan benar
@@ -30,9 +30,9 @@ export function UpdateDataModal({ isOpen, onClose }: UpdateDataModalProps) {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
           {/* Left Column */}
           <div className="flex flex-col gap-6">
-            <InputField label="Nama Unit Pengedaran" />
-            <InputField label="Alamat Pengedaran" />
-            <InputField label="Koordinat Lokasi Pengedaran" />
+            <InputField label="Nama Unit Pengedar DN" />
+            <InputField label="Alamat Pengedar DN" />
+            <InputField label="Koordinat Lokasi Pengedar DN" />
             <InputField label="No. SK / Sertifikat Standar" />
 
             {/* Tanggal SK */}
