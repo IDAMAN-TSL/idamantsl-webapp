@@ -15,9 +15,9 @@ import {
   ExternalLink,
   X,
 } from "lucide-react";
-import { AddDataModal } from "@/components/referensi-tsl/AddDataModal";
-import { UpdateDataModal } from "@/components/referensi-tsl/UpdateDataModal";
-import { UploadDocModal } from "@/components/ui/UploadDocModal";
+import { AddDataModal } from "../../components/referensi-tsl/AddDataModal";
+import { UpdateDataModal } from "../../components/referensi-tsl/UpdateDataModal";
+import { UploadDocModal } from "../../components/ui/UploadDocModal";
 
 const filterTags = [
   "Nama TSL",
@@ -222,7 +222,7 @@ export default function ReferensiTSLPage() {
                   Klasifikasi
                 </th>
                 <th
-                  colSpan={2}
+                  colSpan={3}
                   className="border border-gray-200 px-3 py-2 text-center font-bold text-gray-800"
                 >
                   Status
@@ -262,6 +262,9 @@ export default function ReferensiTSLPage() {
                 <th className="border border-gray-200 px-2 py-1.5 text-center font-semibold text-gray-700 min-w-[100px]">
                   CITES
                 </th>
+                <th className="border border-gray-200 px-2 py-1.5 text-center font-semibold text-gray-700 min-w-[100px]">
+                  IUCN
+                </th>
               </tr>
             </thead>
 
@@ -280,11 +283,8 @@ export default function ReferensiTSLPage() {
                   <td className="border border-gray-100 px-2 py-3 text-gray-500"></td>
                   <td className="border border-gray-100 px-2 py-3 text-gray-500"></td>
                   <td className="border border-gray-100 px-2 py-3 text-gray-500 italic"></td>
-                  <td className="border border-gray-100 px-2 py-3 text-center">
-                    <span className="inline-flex rounded-full bg-[#D9F0DF] px-2 py-0.5 text-[10px] font-medium text-[#2A7F3A]">
-                      {row.status}
-                    </span>
-                  </td>
+                  <td className="border border-gray-100 px-2 py-3 text-center" />
+                  <td className="border border-gray-100 px-2 py-3 text-center" />
                   <td className="border border-gray-100 px-2 py-3 text-center"></td>
                   <td className="border border-gray-100 px-2 py-3 text-center">
                     <div className="flex items-center justify-center gap-2">

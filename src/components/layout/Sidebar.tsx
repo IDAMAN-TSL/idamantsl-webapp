@@ -35,9 +35,9 @@ const navigation = [
   { name: "Referensi TSL", href: "/referensi-tsl", icon: FileText },
   { 
     name: "Verifikasi", 
-    href: "/dashboard/verifikasi", 
+    href: "/verifikasi", 
     icon: BadgeCheck,
-    badge: 3 
+    badge: 3
   },
   {
     name: "Manajemen Pengguna",
