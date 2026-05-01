@@ -16,24 +16,29 @@ import {
 
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { name: "Penangkaran TSL", href: "/penangkaran", icon: Leaf },
+  { name: "Penangkar", href: "/penangkaran", icon: Leaf },
   {
-    name: "Pengedaran TSL Dalam Negeri",
+    name: "Pengedar Dalam Negeri",
     href: "/pengedaran-dalam",
     icon: Globe,
   },
   {
-    name: "Pengedaran TSL Luar Negeri",
+    name: "Pengedar Luar Negeri",
     href: "/pengedaran-luar",
     icon: Globe,
   },
   {
-    name: "Lembaga Konservasi TSL",
+    name: "Lembaga Konservasi",
     href: "/lembaga-konservasi",
     icon: Building,
   },
   { name: "Referensi TSL", href: "/referensi-tsl", icon: FileText },
-  { name: "Verifikasi", href: "/dashboard/verifikasi", icon: BadgeCheck },
+  { 
+    name: "Verifikasi", 
+    href: "/dashboard/verifikasi", 
+    icon: BadgeCheck,
+    badge: 3 
+  },
   {
     name: "Manajemen Pengguna",
     href: "/dashboard/manajemen-pengguna",
@@ -95,18 +100,25 @@ export function Sidebar({
               key={item.name}
               href={item.href}
               onClick={() => setIsOpen?.(false)}
-              className={`group flex items-center justify-start gap-4 rounded-xl px-4 py-3.5 text-sm font-medium transition-colors ${
+              className={`group flex items-center justify-between gap-4 rounded-xl px-4 py-3.5 text-sm font-medium transition-colors ${
                 isActive
                   ? "bg-[#446B2F] text-white shadow-md shadow-[#446B2F]/20"
-                  : "bg-[#F8F9FA] text-gray-700 hover:bg-gray-100"
+                  : "text-gray-700 hover:bg-gray-50"
               }`}
             >
-              <item.icon
-                className={`h-5 w-5 ${
-                  isActive ? "text-white" : "text-gray-600"
-                }`}
-              />
-              {item.name}
+              <div className="flex items-center gap-3 flex-1 min-w-0">
+                <item.icon
+                  className={`h-5 w-5 flex-shrink-0 ${
+                    isActive ? "text-white" : "text-gray-600"
+                  }`}
+                />
+                <span className="truncate">{item.name}</span>
+              </div>
+              {item.badge && (
+                <span className="ml-2 inline-flex items-center justify-center h-6 w-6 rounded-full bg-red-500 text-white text-xs font-bold flex-shrink-0">
+                  {item.badge}
+                </span>
+              )}
             </Link>
           );
         })}
