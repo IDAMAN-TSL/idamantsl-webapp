@@ -67,7 +67,7 @@ export function Sidebar({
 
       {/* Sidebar Container */}
       <div 
-        className={`fixed inset-y-0 left-0 z-50 flex h-full w-[280px] md:w-72 flex-col border-r border-gray-200 bg-white transform transition-transform duration-300 ease-in-out md:relative md:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-50 flex h-full w-[280px] md:h-screen md:w-72 md:shrink-0 flex-col border-r border-gray-200 bg-white transform transition-transform duration-300 ease-in-out md:sticky md:top-0 md:translate-x-0 ${
           isOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
@@ -102,7 +102,7 @@ export function Sidebar({
               onClick={() => setIsOpen?.(false)}
               className={`group flex items-center justify-between gap-4 rounded-xl px-4 py-3.5 text-sm font-medium transition-colors ${
                 isActive
-                  ? "bg-[#446B2F] text-white shadow-md shadow-[#446B2F]/20"
+                  ? "bg-[#8E9E25] text-white shadow-md shadow-[#8E9E25]/20"
                   : "text-gray-700 hover:bg-gray-50"
               }`}
             >

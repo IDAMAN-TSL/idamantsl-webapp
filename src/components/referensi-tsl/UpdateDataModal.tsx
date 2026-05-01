@@ -1,63 +1,84 @@
+"use client";
+
 import React from "react";
-import { X, Save, ChevronDown, Trash2 } from "lucide-react";
+import { ChevronDown, Save, Trash2, X } from "lucide-react";
 
 interface UpdateDataModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-export function UpdateDataModal({ isOpen, onClose }: UpdateDataModalProps) {
+export function UpdateDataModal({
+  isOpen,
+  onClose,
+}: Readonly<UpdateDataModalProps>) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto overflow-x-hidden bg-black/40 backdrop-blur-sm p-4 md:p-8">
-      <div className="my-auto w-full max-w-5xl rounded-[32px] p-8 md:p-10 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.3)] relative" style={{ backgroundColor: "#edf0deff" }}>
-        <div className="text-center mb-8">
-          <h2 className="text-[22px] font-extrabold text-gray-900 tracking-tight">Perbarui Data Referensi TSL</h2>
-          <p className="text-sm font-medium text-gray-600 mt-1">Perbarui data dengan baik dan benar</p>
+    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/40 p-4 backdrop-blur-sm md:p-8">
+      <div className="relative w-full max-w-4xl rounded-[14px] bg-white px-6 py-6 shadow-[0_24px_80px_-20px_rgba(0,0,0,0.35)] md:px-8 md:py-7">
+        <button
+          onClick={onClose}
+          className="absolute right-4 top-4 inline-flex h-8 w-8 items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700"
+          aria-label="Tutup modal"
+        >
+          <X className="h-5 w-5" strokeWidth={2.2} />
+        </button>
+
+        <div className="text-center">
+          <h2 className="text-[15px] font-medium text-gray-900 md:text-[16px]">
+            Perbarui Data Referensi TSL
+          </h2>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
-          <div className="flex flex-col gap-6">
+
+        <div className="mt-5 grid grid-cols-1 gap-x-6 gap-y-4 md:grid-cols-2">
+          <div className="flex flex-col gap-4">
             <InputField label="Nama TSL" />
-            <SelectField label="Jenis TSL">
-              <option value="">-- Pilih Jenis --</option>
-              <option value="tumbuhan">Tumbuhan</option>
-              <option value="satwa">Satwa</option>
-            </SelectField>
+            <SelectField label="Jenis TSL" options={["Tumbuhan", "Satwa"]} />
             <InputField label="Kingdom" />
-            <InputField label="Filum" />
+            <InputField label="Divisi" />
             <InputField label="Kelas" />
-          </div>
-          <div className="flex flex-col gap-6">
             <InputField label="Ordo" />
-            <InputField label="Famili" />
+          </div>
+
+          <div className="flex flex-col gap-4">
+            <InputField label="Family" />
             <InputField label="Genus" />
             <InputField label="Spesies" />
-            <SelectField label="Status Perlindungan Nasional">
-              <option value="">-- Pilih Status --</option>
-              <option value="dilindungi">Dilindungi</option>
-              <option value="tidak-dilindungi">Tidak Dilindungi</option>
-            </SelectField>
-            <SelectField label="Status CITES">
-              <option value="">-- Pilih Appendix --</option>
-              <option value="appendix-i">Appendix I</option>
-              <option value="appendix-ii">Appendix II</option>
-              <option value="appendix-iii">Appendix III</option>
-            </SelectField>
+            <SelectField
+              label="Status Perlindungan Nasional"
+              options={["Dilindungi", "Tidak Dilindungi"]}
+            />
+            <SelectField
+              label="Status CITES"
+              options={["Appendix I", "Appendix II", "Appendix III"]}
+            />
+            <SelectField
+              label="Status IUCN"
+              options={["LC", "NT", "VU", "EN", "CR", "EW", "EX", "DD", "NE"]}
+            />
           </div>
         </div>
-        <div className="mt-10 flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-3">
-          <button className="flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-red-600 hover:bg-red-700 px-6 py-3.5 text-sm font-bold text-white shadow-[0_4px_14px_rgba(220,38,38,0.3)] transition-all active:scale-95">
-            <Trash2 className="h-5 w-5" strokeWidth={2.5} />
+
+        <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <button className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-red-600 px-4 py-2 text-[14px] font-semibold text-white shadow-sm transition-colors hover:bg-red-700 sm:w-auto">
+            <Trash2 className="h-4.5 w-4.5" strokeWidth={2.5} />
             Hapus
           </button>
-          <div className="flex items-center gap-3">
-            <button onClick={onClose} className="flex flex-1 sm:flex-none items-center justify-center gap-2 rounded-xl bg-amber-500 hover:bg-amber-600 px-6 py-3.5 text-sm font-bold text-white shadow-[0_4px_14px_rgba(245,158,11,0.35)] transition-all active:scale-95">
-              <X className="h-5 w-5" strokeWidth={2.5} />
+
+          <div className="flex flex-wrap items-center justify-end gap-3">
+            <button
+              type="button"
+              onClick={onClose}
+              className="inline-flex items-center justify-center rounded-xl border border-gray-300 bg-white px-4 py-2 text-[14px] font-semibold text-gray-700 shadow-sm transition-colors hover:bg-gray-50"
+            >
               Batal
             </button>
-            <button className="flex flex-1 sm:flex-none items-center justify-center gap-2 rounded-xl bg-[#5B7943] hover:bg-[#4a6336] px-6 py-3.5 text-sm font-bold text-white shadow-[0_4px_14px_rgba(91,121,67,0.3)] transition-all active:scale-95">
-              <Save className="h-5 w-5" strokeWidth={2.5} />
+            <button
+              type="button"
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#8E9E25] px-4 py-2 text-[14px] font-semibold text-white shadow-sm transition-colors hover:bg-[#7e8d20]"
+            >
+              <Save className="h-4.5 w-4.5" strokeWidth={2.4} />
               Simpan
             </button>
           </div>
@@ -67,26 +88,40 @@ export function UpdateDataModal({ isOpen, onClose }: UpdateDataModalProps) {
   );
 }
 
-function InputField({ label }: { label: string }) {
+function InputField({ label }: Readonly<{ label: string }>) {
   return (
-    <div className="flex flex-col gap-2">
-      <label className="text-[13px] font-extrabold text-[#111] ml-1">{label}</label>
-      <input type="text" className="h-12 w-full rounded-[14px] border border-white/50 px-4 outline-none focus:ring-2 focus:ring-[#5B7943]/50 transition-all text-sm text-gray-800" style={{ backgroundColor: "#EEF0E5", boxShadow: "0 6px 12px -2px rgba(0,0,0,0.06), inset 0 2px 4px rgba(255,255,255,0.5)" }} />
+    <div className="flex flex-col gap-1.5">
+      <label className="text-[12px] text-gray-500">{label}</label>
+      <input
+        type="text"
+        className="h-8 w-full rounded-[3px] border border-[#C7D0AF] bg-white px-3 text-[12px] text-gray-800 outline-none focus:ring-1 focus:ring-[#8E9E25]"
+      />
     </div>
   );
 }
 
-function SelectField({ label, children }: { label: string; children: React.ReactNode }) {
+function SelectField({
+  label,
+  options,
+}: Readonly<{
+  label: string;
+  options: string[];
+}>) {
   return (
-    <div className="flex flex-col gap-2">
-      <label className="text-[13px] font-extrabold text-[#111] ml-1">{label}</label>
+    <div className="flex flex-col gap-1.5">
+      <label className="text-[12px] text-gray-500">{label}</label>
       <div className="relative">
-        <select className="h-12 w-full rounded-[14px] border border-white/50 pl-4 pr-[52px] outline-none appearance-none focus:ring-2 focus:ring-[#5B7943]/50 transition-all text-sm text-gray-800" style={{ backgroundColor: "#EEF0E5", boxShadow: "0 6px 12px -2px rgba(0,0,0,0.06), inset 0 2px 4px rgba(255,255,255,0.5)" }}>
-          {children}
+        <select className="h-8 w-full appearance-none rounded-[3px] border border-[#C7D0AF] bg-white px-3 pr-7 text-[12px] text-gray-800 outline-none focus:ring-1 focus:ring-[#8E9E25]">
+          <option value=""></option>
+          {options.map((option) => (
+            <option key={option} value={option}>
+              {option}
+            </option>
+          ))}
         </select>
-        <div className="absolute right-1.5 top-1/2 -translate-y-1/2 h-[34px] w-[34px] rounded-[10px] bg-[#5B7943] flex items-center justify-center pointer-events-none">
-          <ChevronDown className="h-[18px] w-[18px] text-white" strokeWidth={2.5} />
-        </div>
+        <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[#8E9E25]">
+          <ChevronDown className="h-4 w-4" strokeWidth={2} />
+        </span>
       </div>
     </div>
   );

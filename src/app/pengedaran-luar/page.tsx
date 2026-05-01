@@ -228,7 +228,7 @@ export default function PengedaranLuarPage() {
                   rowSpan={2}
                   className="border border-gray-200 px-3 py-2 text-center font-bold text-gray-800 min-w-[130px]"
                 >
-                  Nama Unit<br />Pengedaran
+                  Nama Unit<br />Pengedar
                 </th>
                 <th
                   colSpan={3}
