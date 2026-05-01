@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { UserCircle, Menu } from "lucide-react";
+import { UserCircle, Menu, Bell } from "lucide-react";
 import LogoIcon from "@/assets/icon/Logo.svg";
 
 export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
@@ -35,11 +35,29 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
       {/* Desktop spacer: nothing on left */}
       <div className="hidden md:block" />
 
-      {/* Account Button */}
-      <button className="flex items-center gap-2 rounded-[14px] bg-[#446B2F] px-5 py-3 text-sm font-semibold text-white shadow-sm transition-all hover:bg-[#385926]">
-        <UserCircle className="h-5 w-5" />
-        Akun
-      </button>
+      {/* Right Section: Notification + Account */}
+      <div className="flex items-center gap-4">
+        {/* Notification Bell */}
+        <button className="flex h-10 w-10 items-center justify-center rounded-lg text-gray-600 hover:bg-gray-50 transition-colors relative">
+          <Bell className="h-5 w-5" />
+          <span className="absolute top-2 right-2 h-2 w-2 bg-yellow-400 rounded-full"></span>
+        </button>
+
+        {/* Account Info */}
+        <button className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors">
+          <div className="flex flex-col items-end">
+            <span className="text-sm font-semibold text-gray-900">
+              John Doe
+            </span>
+            <span className="text-xs text-gray-500">
+              Pusat BBKSDA Jabar
+            </span>
+          </div>
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gray-200">
+            <UserCircle className="h-6 w-6 text-gray-600" />
+          </div>
+        </button>
+      </div>
     </header>
   );
 }
