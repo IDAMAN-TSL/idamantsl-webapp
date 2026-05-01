@@ -1,218 +1,220 @@
 import React, { useState } from "react";
-import { X, Save, Calendar, ChevronDown, Trash2, Upload } from "lucide-react";
-import { UploadDocModal } from "@/components/ui/UploadDocModal";
+import { X, Save, Calendar, ChevronDown, Upload } from "lucide-react";
+import { UploadDocModal } from "../ui/UploadDocModal";
 
 interface AddDataModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-export function AddDataModal({ isOpen, onClose }: AddDataModalProps) {
-  const [uploadOpen, setUploadOpen] = useState(false);
+const sections = ["Informasi Lembaga", "Informasi Perizinan"];
+
+export function AddDataModal({ isOpen, onClose }: Readonly<AddDataModalProps>) {
+  const [section, setSection] = useState(0);
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
 
   if (!isOpen) return null;
 
+  const handleClose = () => {
+    setSection(0);
+    onClose();
+  };
+
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto overflow-x-hidden bg-black/40 backdrop-blur-sm p-4 md:p-8">
-      {/* Modal Container */}
-      <div
-        className="my-auto w-full max-w-5xl rounded-[32px] p-8 md:p-10 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.3)] relative"
-        style={{ backgroundColor: "#edf0deff" }}
-      >
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h2 className="text-[22px] font-extrabold text-gray-900 tracking-tight">
-            Formulir Lembaga Konservasi TSL
-          </h2>
-          <p className="text-sm font-medium text-gray-600 mt-1">
-            Isi data dengan baik dan benar
-          </p>
-        </div>
-
-        {/* Form Body - 2 Columns */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
-          {/* Left Column — 6 fields */}
-          <div className="flex flex-col gap-6">
-            <InputField label="Nama Unit Lembaga" />
-            <InputField label="Alamat Lembaga" />
-            <InputField label="Koordinat Lokasi Lembaga" />
-            <InputField label="No. SK / Sertifikat Standar" />
-
-            {/* Tanggal SK */}
-            <div className="flex flex-col gap-2">
-              <label className="text-[13px] font-extrabold text-[#111] ml-1">
-                Tanggal SK
-              </label>
-              <div className="relative">
-                <div className="absolute left-1.5 top-1/2 -translate-y-1/2 h-[34px] w-[34px] rounded-[10px] bg-[#5B7943] flex items-center justify-center pointer-events-none z-10">
-                  <Calendar className="h-[18px] w-[18px] text-white" strokeWidth={2.5} />
-                </div>
-                <input
-                  type="date"
-                  className="h-12 w-full rounded-[14px] border border-white/50 pl-[52px] pr-4 outline-none focus:ring-2 focus:ring-[#5B7943]/50 transition-all text-sm text-gray-800 cursor-pointer"
-                  style={{
-                    backgroundColor: "#EEF0E5",
-                    boxShadow: "0 6px 12px -2px rgba(0,0,0,0.06), inset 0 2px 4px rgba(255,255,255,0.5)",
-                    colorScheme: "light",
-                  }}
-                />
-              </div>
-            </div>
-
-            <InputField label="Penerbit" />
-          </div>
-
-          {/* Right Column — 5 items */}
-          <div className="flex flex-col gap-6">
-            {/* Akhir Masa Berlaku Izin */}
-            <div className="flex flex-col gap-2">
-              <label className="text-[13px] font-extrabold text-[#111] ml-1">
-                Akhir Masa Berlaku Izin
-              </label>
-              <div className="relative">
-                <div className="absolute left-1.5 top-1/2 -translate-y-1/2 h-[34px] w-[34px] rounded-[10px] bg-[#5B7943] flex items-center justify-center pointer-events-none z-10">
-                  <Calendar className="h-[18px] w-[18px] text-white" strokeWidth={2.5} />
-                </div>
-                <input
-                  type="date"
-                  className="h-12 w-full rounded-[14px] border border-white/50 pl-[52px] pr-4 outline-none focus:ring-2 focus:ring-[#5B7943]/50 transition-all text-sm text-gray-800 cursor-pointer"
-                  style={{
-                    backgroundColor: "#EEF0E5",
-                    boxShadow: "0 6px 12px -2px rgba(0,0,0,0.06), inset 0 2px 4px rgba(255,255,255,0.5)",
-                    colorScheme: "light",
-                  }}
-                />
-              </div>
-            </div>
-
-            <InputField label="Nama Direktur / Penanggung Jawab" />
-            <InputField label="No Telepon" />
-
-            {/* Status — single dropdown */}
-            <div className="flex flex-col gap-2">
-              <label className="text-[13px] font-extrabold text-[#111] ml-1">
-                Status
-              </label>
-              <div className="relative">
-                <select
-                  className="h-12 w-full rounded-[14px] border border-white/50 pl-4 pr-[52px] outline-none appearance-none focus:ring-2 focus:ring-[#5B7943]/50 transition-all text-sm text-gray-800"
-                  style={{
-                    backgroundColor: "#EEF0E5",
-                    boxShadow: "0 6px 12px -2px rgba(0,0,0,0.06), inset 0 2px 4px rgba(255,255,255,0.5)",
-                  }}
-                >
-                  <option value="">-- Pilih Status --</option>
-                  <option value="aktif">Aktif</option>
-                  <option value="tidak-aktif">Tidak Aktif</option>
-                  <option value="proses">Dalam Proses</option>
-                </select>
-                <div className="absolute right-1.5 top-1/2 -translate-y-1/2 h-[34px] w-[34px] rounded-[10px] bg-[#5B7943] flex items-center justify-center pointer-events-none">
-                  <ChevronDown className="h-[18px] w-[18px] text-white" strokeWidth={2.5} />
-                </div>
-              </div>
-            </div>
-
-            {/* Split Row: Bidang KSDA Wilayah & Seksi Konservasi Wilayah */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="flex flex-col gap-2">
-                <label className="text-[13px] font-extrabold text-[#111] ml-1">
-                  Bidang KSDA Wilayah
-                </label>
-                <div className="relative">
-                  <select
-                    className="h-12 w-full rounded-[14px] border border-white/50 pl-4 pr-[44px] outline-none appearance-none focus:ring-2 focus:ring-[#5B7943]/50 transition-all text-sm text-gray-800 text-ellipsis"
-                    style={{
-                      backgroundColor: "#EEF0E5",
-                      boxShadow: "0 6px 12px -2px rgba(0,0,0,0.06), inset 0 2px 4px rgba(255,255,255,0.5)",
-                    }}
-                  >
-                    <option value="">-- Pilih Bidang --</option>
-                    <option value="I">I – Bogor</option>
-                    <option value="II">II – Soreang</option>
-                    <option value="III">III – Ciamis</option>
-                  </select>
-                  <div className="absolute right-1.5 top-1/2 -translate-y-1/2 h-[30px] w-[30px] rounded-[8px] bg-[#5B7943] flex items-center justify-center pointer-events-none">
-                    <ChevronDown className="h-4 w-4 text-white" strokeWidth={2.5} />
-                  </div>
-                </div>
-              </div>
-              <div className="flex flex-col gap-2">
-                <label className="text-[13px] font-extrabold text-[#111] ml-1">
-                  Seksi Konservasi Wilayah
-                </label>
-                <div className="relative">
-                  <select
-                    className="h-12 w-full rounded-[14px] border border-white/50 pl-4 pr-[44px] outline-none appearance-none focus:ring-2 focus:ring-[#5B7943]/50 transition-all text-sm text-gray-800 text-ellipsis"
-                    style={{
-                      backgroundColor: "#EEF0E5",
-                      boxShadow: "0 6px 12px -2px rgba(0,0,0,0.06), inset 0 2px 4px rgba(255,255,255,0.5)",
-                    }}
-                  >
-                    <option value="">-- Pilih Seksi --</option>
-                    <option value="I">I – Serang</option>
-                    <option value="II">II – Bogor</option>
-                    <option value="III">III – Soreang</option>
-                    <option value="IV">IV – Purwakarta</option>
-                    <option value="V">V – Garut</option>
-                    <option value="VI">VI – Tasikmalaya</option>
-                  </select>
-                  <div className="absolute right-1.5 top-1/2 -translate-y-1/2 h-[30px] w-[30px] rounded-[8px] bg-[#5B7943] flex items-center justify-center pointer-events-none">
-                    <ChevronDown className="h-4 w-4 text-white" strokeWidth={2.5} />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Footer Actions */}
-        <div className="mt-10 flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-3">
-          {/* Kiri: Unggah */}
+    <>
+      <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/40 p-4 backdrop-blur-sm md:p-8">
+        <div className="relative w-full max-w-4xl rounded-[14px] bg-white px-6 py-6 shadow-[0_24px_80px_-20px_rgba(0,0,0,0.35)] md:px-8 md:py-7">
           <button
-            onClick={() => setUploadOpen(true)}
-            className="flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-[#5B7943] hover:bg-[#4a6336] px-6 py-3.5 text-sm font-bold text-white shadow-[0_4px_14px_rgba(91,121,67,0.3)] transition-all active:scale-95"
+            onClick={handleClose}
+            className="absolute right-4 top-4 inline-flex h-8 w-8 items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700"
+            aria-label="Tutup modal"
           >
-            <Upload className="h-5 w-5" strokeWidth={2.5} />
-            Unggah
+            <X className="h-5 w-5" strokeWidth={2.2} />
           </button>
-          {/* Kanan: Batal + Simpan */}
-          <div className="flex items-center gap-3">
+
+          <div className="text-center">
+            <h2 className="text-[15px] font-medium text-gray-900 md:text-[16px]">
+              Tambah Data Lembaga Konservasi TSL
+            </h2>
+          </div>
+
+          <div className="mt-4 grid grid-cols-2 gap-2 text-center text-[12px] md:text-[13px]">
+            {sections.map((label, index) => {
+              const active = index === section;
+              return (
+                <button
+                  key={label}
+                  type="button"
+                  onClick={() => setSection(index)}
+                  className="pb-2"
+                >
+                  <span className={active ? "font-medium text-[#8E9E25]" : "text-gray-400"}>
+                    {label}
+                  </span>
+                  <span
+                    className={`mt-2 block h-px w-full ${active ? "bg-[#8E9E25]" : "bg-gray-200"}`}
+                  />
+                </button>
+              );
+            })}
+          </div>
+
+          {section === 0 && (
+            <div className="mt-5 grid grid-cols-1 gap-x-6 gap-y-4 md:grid-cols-2">
+              <div className="flex flex-col gap-4">
+                <Field label="Nama Unit Lembaga" />
+                <Field label="Nama Direktur / Penanggung Jawab" />
+                <Field label="Nomor Telepon" />
+                <Field label="Lokasi Kantor" />
+              </div>
+
+              <div className="flex flex-col gap-4">
+                <SelectField label="Bidang KSDA Wilayah" options={[
+                  "I – Bogor",
+                  "II – Soreang",
+                  "III – Ciamis",
+                ]} />
+                <SelectField label="Seksi Konservasi Wilayah" options={[
+                  "I – Serang",
+                  "II – Bogor",
+                  "III – Soreang",
+                  "IV – Purwakarta",
+                  "V – Garut",
+                  "VI – Tasikmalaya",
+                ]} />
+                <Field label="Alamat Lembaga" />
+                <Field label="Koordinat Lokasi Lembaga" withLocationIcon />
+              </div>
+            </div>
+          )}
+
+          {section === 1 && (
+            <div className="mt-5 grid grid-cols-1 gap-x-6 gap-y-4 md:grid-cols-2">
+              <div className="flex flex-col gap-4">
+                <Field label="No. SK / Sertifikat Standar" />
+                <DateField label="Tanggal SK" />
+                <DateField label="Akhir Masa Berlaku Izin" />
+              </div>
+
+              <div className="flex flex-col gap-4">
+                <Field label="Penerbit" />
+                <SelectField label="Status" options={["Aktif", "Tidak Aktif", "Dalam Proses"]} />
+              </div>
+            </div>
+          )}
+
+          <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
             <button
-              onClick={onClose}
-              className="flex flex-1 sm:flex-none items-center justify-center gap-2 rounded-xl bg-amber-500 hover:bg-amber-600 px-6 py-3.5 text-sm font-bold text-white shadow-[0_4px_14px_rgba(245,158,11,0.35)] transition-all active:scale-95"
+              onClick={() => setIsUploadModalOpen(true)}
+              className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#8E9E25] px-4 py-2 text-[14px] font-semibold text-white shadow-sm transition-colors hover:bg-[#7e8d20] sm:w-auto"
             >
-              <X className="h-5 w-5" strokeWidth={2.5} />
-              Batal
+              <Upload className="h-4.5 w-4.5" strokeWidth={2.5} />
+              Unggah
             </button>
-            <button className="flex flex-1 sm:flex-none items-center justify-center gap-2 rounded-xl bg-[#5B7943] hover:bg-[#4a6336] px-6 py-3.5 text-sm font-bold text-white shadow-[0_4px_14px_rgba(91,121,67,0.3)] transition-all active:scale-95">
-              <Save className="h-5 w-5" strokeWidth={2.5} />
-              Simpan
-            </button>
+
+            <div className="flex flex-wrap items-center justify-end gap-3">
+              {section > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setSection((previous) => previous - 1)}
+                  className="inline-flex items-center justify-center rounded-xl border border-gray-300 bg-white px-4 py-2 text-[14px] font-semibold text-gray-700 shadow-sm transition-colors hover:bg-gray-50"
+                >
+                  Kembali
+                </button>
+              )}
+
+              {section < sections.length - 1 ? (
+                <button
+                  type="button"
+                  onClick={() => setSection((previous) => previous + 1)}
+                  className="inline-flex items-center justify-center rounded-xl bg-[#8E9E25] px-4 py-2 text-[14px] font-semibold text-white shadow-sm transition-colors hover:bg-[#7e8d20]"
+                >
+                  Lanjut
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleClose}
+                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#8E9E25] px-4 py-2 text-[14px] font-semibold text-white shadow-sm transition-colors hover:bg-[#7e8d20]"
+                >
+                  <Save className="h-4.5 w-4.5" strokeWidth={2.4} />
+                  Simpan
+                </button>
+              )}
+            </div>
           </div>
         </div>
-
-        {/* Upload Doc Modal */}
-        <UploadDocModal isOpen={uploadOpen} onClose={() => setUploadOpen(false)} />
       </div>
-    </div>
+
+      <UploadDocModal
+        isOpen={isUploadModalOpen}
+        onClose={() => setIsUploadModalOpen(false)}
+      />
+    </>
   );
 }
 
-{/* Helper component for generic inputs */}
-function InputField({ label }: { label: string }) {
+function Field({ label, withLocationIcon = false }: Readonly<{ label: string; withLocationIcon?: boolean }>) {
   return (
-    <div className="flex flex-col gap-2">
-      <label className="text-[13px] font-extrabold text-[#111] ml-1">
-        {label}
-      </label>
-      <input
-        type="text"
-        className="h-12 w-full rounded-[14px] border border-white/50 px-4 outline-none focus:ring-2 focus:ring-[#5B7943]/50 transition-all text-sm text-gray-800"
-        style={{
-          backgroundColor: "#EEF0E5",
-          boxShadow: "0 6px 12px -2px rgba(0,0,0,0.06), inset 0 2px 4px rgba(255,255,255,0.5)",
-        }}
-      />
-    </div>
+    <label className="flex flex-col gap-1.5 text-[13px] text-gray-700">
+      <span className="font-medium">{label}</span>
+      <div className="relative">
+        <input
+          type="text"
+          className={`w-full rounded-xl border border-gray-200 bg-white py-2.5 text-[14px] text-gray-800 shadow-sm outline-none transition-all focus:border-[#8E9E25] focus:ring-2 focus:ring-[#8E9E25]/20 ${
+            withLocationIcon ? "pl-10 pr-3" : "px-3"
+          }`}
+        />
+        {withLocationIcon && (
+          <span className="pointer-events-none absolute inset-y-0 left-3 inline-flex items-center text-gray-400">
+            +
+          </span>
+        )}
+      </div>
+    </label>
+  );
+}
+
+function DateField({ label }: Readonly<{ label: string }>) {
+  return (
+    <label className="flex flex-col gap-1.5 text-[13px] text-gray-700">
+      <span className="font-medium">{label}</span>
+      <div className="relative">
+        <span className="pointer-events-none absolute inset-y-0 left-3 inline-flex items-center text-gray-400">
+          <Calendar className="h-4 w-4" strokeWidth={2.2} />
+        </span>
+        <input
+          type="date"
+          className="w-full rounded-xl border border-gray-200 bg-white py-2.5 pl-10 pr-3 text-[14px] text-gray-800 shadow-sm outline-none transition-all focus:border-[#8E9E25] focus:ring-2 focus:ring-[#8E9E25]/20"
+        />
+      </div>
+    </label>
+  );
+}
+
+function SelectField({
+  label,
+  options,
+}: Readonly<{
+  label: string;
+  options: string[];
+}>) {
+  return (
+    <label className="flex flex-col gap-1.5 text-[13px] text-gray-700">
+      <span className="font-medium">{label}</span>
+      <div className="relative">
+        <select className="w-full appearance-none rounded-xl border border-gray-200 bg-white py-2.5 pl-3 pr-10 text-[14px] text-gray-800 shadow-sm outline-none transition-all focus:border-[#8E9E25] focus:ring-2 focus:ring-[#8E9E25]/20">
+          <option value="">Pilih</option>
+          {options.map((option) => (
+            <option key={option} value={option}>
+              {option}
+            </option>
+          ))}
+        </select>
+        <span className="pointer-events-none absolute inset-y-0 right-3 inline-flex items-center text-gray-400">
+          <ChevronDown className="h-4 w-4" strokeWidth={2.2} />
+        </span>
+      </div>
+    </label>
   );
 }
