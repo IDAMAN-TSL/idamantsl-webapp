@@ -12,23 +12,106 @@ import {
 interface AddDataModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onSuccess?: () => void;
 }
 
-const sections = ["Informasi Dasar", "Klasifikasi dan Status"];
+const sections = ["Informasi Umum", "Informasi Status"];
+const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 
-export function AddDataModal({ isOpen, onClose }: Readonly<AddDataModalProps>) {
+const IUCN_OPTIONS = [
+  { label: "EX (Extinct/Punah)", value: "punah" },
+  { label: "EW (Extinct in the Wild/Punah di Alam Liar)", value: "punah_di_alam" },
+  { label: "CR (Critically Endangered/Kritis)", value: "sangat_terancam_punah" },
+  { label: "EN (Endangered/Terancam)", value: "terancam_punah" },
+  { label: "VU (Vulnerable/Rentan)", value: "rentan" },
+  { label: "NT (Near Threatened/Hampir Terancam)", value: "hampir_terancam" },
+  { label: "LC (Least Concern/Risiko Rendah)", value: "risiko_rendah" },
+  { label: "DD (Data Deficient/Informasi Kurang)", value: "data_tidak_cukup" },
+  { label: "NE (Not Evaluated/Belum Dievaluasi)", value: "tidak_dievaluasi" },
+];
+
+const CITES_OPTIONS = [
+  { label: "Appendix I", value: "apendiks_i" },
+  { label: "Appendix II", value: "apendiks_ii" },
+  { label: "Appendix III", value: "apendiks_iii" },
+];
+
+const JENIS_OPTIONS = [
+  { label: "Tumbuhan", value: "tumbuhan" },
+  { label: "Satwa Liar", value: "satwa_liar" },
+];
+
+const PERLINDUNGAN_OPTIONS = [
+  { label: "Dilindungi", value: "dilindungi" },
+  { label: "Tidak Dilindungi", value: "tidak_dilindungi" },
+];
+
+export function AddDataModal({ isOpen, onClose, onSuccess }: Readonly<AddDataModalProps>) {
   const [section, setSection] = useState(0);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  const [form, setForm] = useState({
+    namaDaerah: "",
+    jenis: "",
+    kingdom: "",
+    divisi: "",
+    kelas: "",
+    ordo: "",
+    famili: "",
+    genus: "",
+    spesies: "",
+    statusPerlindunganNasional: "",
+    statusCites: "",
+    statusIucn: "",
+  });
 
   if (!isOpen) return null;
 
   const closeAndReset = () => {
     setSection(0);
+    setErrorMsg(null);
+    setForm({ namaDaerah: "", jenis: "", kingdom: "", divisi: "", kelas: "", ordo: "", famili: "", genus: "", spesies: "", statusPerlindunganNasional: "", statusCites: "", statusIucn: "" });
     onClose();
+  };
+
+  const handleChange = (field: string, value: string) => {
+    setForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleSubmit = async () => {
+    if (!form.namaDaerah || !form.jenis) {
+      setErrorMsg("Nama Daerah dan Jenis TSL wajib diisi.");
+      return;
+    }
+    setIsSubmitting(true);
+    setErrorMsg(null);
+    try {
+      const token = globalThis.window === undefined ? null : localStorage.getItem("token");
+      const res = await fetch(`${API_BASE}/api/referensi-tsl`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify(form),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message ?? "Gagal menyimpan data");
+      }
+      onSuccess?.();
+      closeAndReset();
+    } catch (err: unknown) {
+      setErrorMsg(err instanceof Error ? err.message : "Terjadi kesalahan.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/40 p-4 backdrop-blur-sm md:p-8">
-      <div className="relative w-full max-w-4xl rounded-[14px] bg-white px-6 py-6 shadow-[0_24px_80px_-20px_rgba(0,0,0,0.35)] md:px-8 md:py-7">
+      <div className="relative w-full max-w-2xl rounded-[14px] bg-white px-8 py-6 shadow-[0_24px_80px_-20px_rgba(0,0,0,0.35)]">
         <button
           onClick={closeAndReset}
           className="absolute right-4 top-4 inline-flex h-8 w-8 items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700"
@@ -43,7 +126,8 @@ export function AddDataModal({ isOpen, onClose }: Readonly<AddDataModalProps>) {
           </h2>
         </div>
 
-        <div className="mt-4 grid grid-cols-2 gap-2 text-center text-[12px] md:text-[13px]">
+        {/* Section Tabs */}
+        <div className="mt-5 grid grid-cols-2 gap-0 border-b border-gray-200">
           {sections.map((label, index) => {
             const active = index === section;
             return (
@@ -51,69 +135,60 @@ export function AddDataModal({ isOpen, onClose }: Readonly<AddDataModalProps>) {
                 key={label}
                 type="button"
                 onClick={() => setSection(index)}
-                className="pb-2"
+                className="pb-2 text-center text-[13px] transition-colors"
               >
                 <span className={active ? "font-medium text-[#8E9E25]" : "text-gray-400"}>
                   {label}
                 </span>
-                <span
-                  className={`mt-2 block h-px w-full ${active ? "bg-[#8E9E25]" : "bg-gray-200"}`}
-                />
+                <span className={`mt-2 block h-[2px] w-full ${active ? "bg-[#8E9E25]" : "bg-transparent"}`} />
               </button>
             );
           })}
         </div>
 
+        {/* Section 0: Informasi Umum */}
         {section === 0 && (
-          <div className="mt-5 grid grid-cols-1 gap-x-6 gap-y-4 md:grid-cols-2">
+          <div className="mt-6 grid grid-cols-2 gap-x-6 gap-y-4">
             <div className="flex flex-col gap-4">
-              <InputField label="Nama TSL" />
-              <SelectField
-                label="Jenis TSL"
-                options={["Tumbuhan", "Satwa"]}
-              />
-              <InputField label="Kingdom" />
+              <InputField label="Nama Daerah" value={form.namaDaerah} onChange={(v) => handleChange("namaDaerah", v)} required />
+              <InputField label="Kingdom" value={form.kingdom} onChange={(v) => handleChange("kingdom", v)} />
+              <InputField label="Divisi" value={form.divisi} onChange={(v) => handleChange("divisi", v)} />
+              <InputField label="Kelas" value={form.kelas} onChange={(v) => handleChange("kelas", v)} />
             </div>
-
             <div className="flex flex-col gap-4">
-              <InputField label="Divisi" />
-              <InputField label="Kelas" />
+              <SelectFieldOpt label="Jenis TSL" options={JENIS_OPTIONS} value={form.jenis} onChange={(v) => handleChange("jenis", v)} required />
+              <InputField label="Ordo" value={form.ordo} onChange={(v) => handleChange("ordo", v)} />
+              <InputField label="Family" value={form.famili} onChange={(v) => handleChange("famili", v)} />
+              <InputField label="Genus" value={form.genus} onChange={(v) => handleChange("genus", v)} />
+              <InputField label="Spesies" value={form.spesies} onChange={(v) => handleChange("spesies", v)} />
             </div>
           </div>
         )}
 
+        {/* Section 1: Informasi Status */}
         {section === 1 && (
-          <div className="mt-5 grid grid-cols-1 gap-x-6 gap-y-4 md:grid-cols-2">
+          <div className="mt-6 grid grid-cols-2 gap-x-6 gap-y-4">
             <div className="flex flex-col gap-4">
-              <InputField label="Ordo" />
-              <InputField label="Family" />
-              <InputField label="Genus" />
-              <InputField label="Spesies" />
+              <SelectFieldOpt label="Status Perlindungan Nasional" options={PERLINDUNGAN_OPTIONS} value={form.statusPerlindunganNasional} onChange={(v) => handleChange("statusPerlindunganNasional", v)} />
+              <SelectFieldOpt label="Status CITES" options={CITES_OPTIONS} value={form.statusCites} onChange={(v) => handleChange("statusCites", v)} />
             </div>
-
             <div className="flex flex-col gap-4">
-              <SelectField
-                label="Status Perlindungan Nasional"
-                options={["Dilindungi", "Tidak Dilindungi"]}
-              />
-              <SelectField
-                label="Status CITES"
-                options={["Appendix I", "Appendix II", "Appendix III"]}
-              />
-              <SelectField
-                label="Status IUCN"
-                options={["LC", "NT", "VU", "EN", "CR", "EW", "EX", "DD", "NE"]}
-              />
+              <SelectFieldOpt label="Status IUCN" options={IUCN_OPTIONS} value={form.statusIucn} onChange={(v) => handleChange("statusIucn", v)} />
             </div>
           </div>
         )}
 
-        <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
+        {errorMsg && (
+          <p className="mt-3 text-[12px] text-red-600">{errorMsg}</p>
+        )}
+
+        {/* Navigation Buttons */}
+        <div className="mt-8 flex items-center justify-between">
           <div>
             {section > 0 ? (
               <button
                 type="button"
-                onClick={() => setSection((previous) => previous - 1)}
+                onClick={() => setSection((prev) => prev - 1)}
                 className="inline-flex items-center gap-2 rounded-md border border-[#D4DB8B] bg-[#F6F7E6] px-4 py-2 text-[12px] font-medium text-[#8E9E25] transition-colors hover:bg-[#eef1d1]"
               >
                 <ChevronLeft className="h-4 w-4" strokeWidth={2.2} />
@@ -124,11 +199,11 @@ export function AddDataModal({ isOpen, onClose }: Readonly<AddDataModalProps>) {
             )}
           </div>
 
-          <div className="flex justify-end">
+          <div>
             {section < sections.length - 1 ? (
               <button
                 type="button"
-                onClick={() => setSection((previous) => previous + 1)}
+                onClick={() => setSection((prev) => prev + 1)}
                 className="inline-flex items-center gap-2 rounded-md border border-[#D4DB8B] bg-[#F6F7E6] px-4 py-2 text-[12px] font-medium text-[#8E9E25] transition-colors hover:bg-[#eef1d1]"
               >
                 Lanjut
@@ -137,11 +212,12 @@ export function AddDataModal({ isOpen, onClose }: Readonly<AddDataModalProps>) {
             ) : (
               <button
                 type="button"
-                onClick={closeAndReset}
-                className="inline-flex items-center gap-2 rounded-md bg-[#8E9E25] px-4 py-2 text-[12px] font-medium text-white transition-colors hover:bg-[#7e8d20]"
+                disabled={isSubmitting}
+                onClick={handleSubmit}
+                className="inline-flex items-center gap-2 rounded-md bg-[#8E9E25] px-5 py-2 text-[13px] font-semibold text-white transition-colors hover:bg-[#7e8d20] disabled:opacity-60"
               >
                 <Plus className="h-4 w-4" strokeWidth={2.2} />
-                Tambah
+                {isSubmitting ? "Menyimpan..." : "Tambah"}
               </button>
             )}
           </div>
@@ -151,34 +227,55 @@ export function AddDataModal({ isOpen, onClose }: Readonly<AddDataModalProps>) {
   );
 }
 
-function InputField({ label }: Readonly<{ label: string }>) {
+function InputField({
+  label,
+  value,
+  onChange,
+  required,
+}: Readonly<{ label: string; value: string; onChange: (v: string) => void; required?: boolean }>) {
   return (
     <div className="flex flex-col gap-1.5">
-      <label className="text-[12px] text-gray-500">{label}</label>
+      <label className="text-[12px] text-gray-500">
+        {label}{required && <span className="ml-0.5 text-red-500">*</span>}
+      </label>
       <input
         type="text"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
         className="h-8 w-full rounded-[3px] border border-[#C7D0AF] bg-white px-3 text-[12px] text-gray-800 outline-none focus:ring-1 focus:ring-[#8E9E25]"
       />
     </div>
   );
 }
 
-function SelectField({
+function SelectFieldOpt({
   label,
   options,
+  value,
+  onChange,
+  required,
 }: Readonly<{
   label: string;
-  options: string[];
+  options: { label: string; value: string }[];
+  value: string;
+  onChange: (v: string) => void;
+  required?: boolean;
 }>) {
   return (
     <div className="flex flex-col gap-1.5">
-      <label className="text-[12px] text-gray-500">{label}</label>
+      <label className="text-[12px] text-gray-500">
+        {label}{required && <span className="ml-0.5 text-red-500">*</span>}
+      </label>
       <div className="relative">
-        <select className="h-8 w-full appearance-none rounded-[3px] border border-[#C7D0AF] bg-white px-3 pr-7 text-[12px] text-gray-800 outline-none focus:ring-1 focus:ring-[#8E9E25]">
+        <select
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="h-8 w-full appearance-none rounded-[3px] border border-[#C7D0AF] bg-white px-3 pr-7 text-[12px] text-gray-800 outline-none focus:ring-1 focus:ring-[#8E9E25]"
+        >
           <option value=""></option>
-          {options.map((option) => (
-            <option key={option} value={option}>
-              {option}
+          {options.map((opt) => (
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
             </option>
           ))}
         </select>
