@@ -1,236 +1,489 @@
-import React, { useState } from "react";
-import { X, Save, Calendar, ChevronDown, Trash2, Upload } from "lucide-react";
-import { UploadDocModal } from "@/components/ui/UploadDocModal";
+import React, { useEffect, useRef, useState } from "react";
+import { X, Calendar, ChevronDown, FileText, MapPin, Pencil } from "lucide-react";
+
+interface PenangkaranData {
+  id: number;
+  namaPenangkaran: string;
+  nomorSk: string | null;
+  tanggalSk: string | null;
+  akhirMasaBerlaku: string | null;
+  penerbit: string | null;
+  namaDirektur: string | null;
+  nomorTelepon: string | null;
+  alamatKantor: string | null;
+  alamatPenangkaran: string | null;
+  koordinatLokasi: string | null;
+  bidangWilayahId: number | null;
+  seksiWilayahId: number | null;
+  tslId: number | null;
+  indukanJantan?: number | string | null;
+  indukanBetina?: number | string | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+}
 
 interface UpdateDataModalProps {
   isOpen: boolean;
   onClose: () => void;
+  data: PenangkaranData | null;
+  onSuccess?: () => void;
 }
 
-export function UpdateDataModal({ isOpen, onClose }: UpdateDataModalProps) {
+export function UpdateDataModal({ isOpen, onClose, data, onSuccess }: Readonly<UpdateDataModalProps>) {
+  const [isLoading, setIsLoading] = useState(false);
+  const [selectedFileName, setSelectedFileName] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [referensiList, setReferensiList] = useState<{ id: number; namaDaerah: string }[]>([]);
+  const [formData, setFormData] = useState({
+    namaPenangkaran: "",
+    namaDirektur: "",
+    nomorTelepon: "",
+    alamatKantor: "",
+    alamatPenangkaran: "",
+    koordinatLokasi: "",
+    nomorSk: "",
+    penerbit: "",
+    tanggalSk: "",
+    akhirMasaBerlaku: "",
+    bidangWilayahId: "",
+    seksiWilayahId: "",
+    tslId: "",
+    indukanJantan: "",
+    indukanBetina: "",
+  });
+
+  useEffect(() => {
+    const token = globalThis.window ? globalThis.localStorage.getItem("token") : null;
+    const url = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+
+    fetch(`${url}/api/referensi-tsl`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((response) => response.json())
+      .then((json) => setReferensiList(json.data ?? []))
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (data) {
+      setFormData({
+        namaPenangkaran: data.namaPenangkaran || "",
+        namaDirektur: data.namaDirektur || "",
+        nomorTelepon: data.nomorTelepon || "",
+        alamatKantor: data.alamatKantor || "",
+        alamatPenangkaran: data.alamatPenangkaran || "",
+        koordinatLokasi: data.koordinatLokasi || "",
+        nomorSk: data.nomorSk || "",
+        penerbit: data.penerbit || "",
+        tanggalSk: data.tanggalSk ? data.tanggalSk.split("T")[0] : "",
+        akhirMasaBerlaku: data.akhirMasaBerlaku ? data.akhirMasaBerlaku.split("T")[0] : "",
+        bidangWilayahId: data.bidangWilayahId ? String(data.bidangWilayahId) : "",
+        seksiWilayahId: data.seksiWilayahId ? String(data.seksiWilayahId) : "",
+        tslId: data.tslId ? String(data.tslId) : "",
+        indukanJantan:
+          data.indukanJantan === null || data.indukanJantan === undefined
+            ? ""
+            : String(data.indukanJantan),
+        indukanBetina:
+          data.indukanBetina === null || data.indukanBetina === undefined
+            ? ""
+            : String(data.indukanBetina),
+      });
+      setSelectedFileName("");
+    }
+  }, [data]);
+
+  const setField = (key: string, value: string) =>
+    setFormData((prev) => ({ ...prev, [key]: value }));
+
+  const openFilePicker = () => {
+    fileInputRef.current?.click();
+  };
+
+  const formatFooterDate = (value?: string | null) => {
+    if (!value) return "dd mm yyyy";
+    return new Date(value).toLocaleDateString("id-ID", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+  };
+
+  const handleSave = async () => {
+    if (!data) return;
+    try {
+      setIsLoading(true);
+      const token = globalThis.window ? globalThis.localStorage.getItem("token") : null;
+      const url = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+      const parseNullableNumber = (value: string) => {
+        const trimmed = value.trim();
+        if (!trimmed) return null;
+        const parsed = Number(trimmed);
+        return Number.isNaN(parsed) ? null : parsed;
+      };
+      const { indukanJantan, indukanBetina, ...payload } = formData;
+      const res = await fetch(`${url}/api/penangkaran/${data.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          ...payload,
+          tslId: payload.tslId ? Number(payload.tslId) : null,
+          bidangWilayahId: payload.bidangWilayahId ? Number(payload.bidangWilayahId) : null,
+          seksiWilayahId: payload.seksiWilayahId ? Number(payload.seksiWilayahId) : null,
+          tanggalSk: payload.tanggalSk || null,
+          akhirMasaBerlaku: payload.akhirMasaBerlaku || null,
+          indukanJantan: parseNullableNumber(indukanJantan),
+          indukanBetina: parseNullableNumber(indukanBetina),
+        }),
+      });
+      const result = await res.json();
+      if (result.success) {
+        if (onSuccess) onSuccess();
+        onClose();
+      } else {
+        alert(result.message || "Gagal menyimpan perubahan");
+      }
+    } catch {
+      alert("Terjadi kesalahan sistem");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto overflow-x-hidden bg-black/40 backdrop-blur-sm p-4 md:p-8">
-      {/* Modal Container */}
-      <div
-        className="my-auto w-full max-w-5xl rounded-[32px] p-8 md:p-10 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.3)] relative"
-        style={{ backgroundColor: "#edf0deff" }}
-      >
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h2 className="text-[22px] font-extrabold text-gray-900 tracking-tight">
-            Perbarui Data Penangkaran TSL
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto p-4 pt-6 backdrop-blur-[2px] md:p-8 md:pt-8">
+      <button
+        type="button"
+        aria-label="Tutup modal"
+        onClick={onClose}
+        className="absolute inset-0 bg-black/45 focus:outline-none"
+      />
+      <div className="relative z-10 w-full max-w-260 max-h-[calc(100vh-3rem)] overflow-y-auto rounded-lg bg-white px-5 pb-5 pt-6 shadow-[0_18px_50px_-20px_rgba(0,0,0,0.28)] md:px-8 md:pb-6 md:pt-8">
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Tutup modal"
+          className="absolute right-4 top-4 inline-flex h-8 w-8 items-center justify-center rounded-full text-gray-500 transition-colors hover:bg-black/5 hover:text-gray-800"
+        >
+          <X className="h-5 w-5" strokeWidth={2.5} />
+        </button>
+
+        <header className="text-center">
+          <h2 className="text-[18px] font-medium tracking-tight text-gray-900 md:text-[20px]">
+            Perbarui Data Penangkar TSL
           </h2>
-          <p className="text-sm font-medium text-gray-600 mt-1">
-            Perbarui data dengan baik dan benar
-          </p>
-        </div>
+        </header>
 
-        {/* Form Body - 2 Columns */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
-          {/* Left Column */}
-          <div className="flex flex-col gap-6">
-            <InputField label="Nama Unit Penangkaran" />
-            <InputField label="Alamat Penangkaran" />
-            <InputField label="Koordinat Lokasi Penangkaran" />
-            <InputField label="No. SK / Sertifikat Standar" />
-
-            {/* Tanggal SK */}
-            <div className="flex flex-col gap-2">
-              <label className="text-[13px] font-extrabold text-[#111] ml-1">
-                Tanggal SK
-              </label>
-              <div className="relative">
-                <div className="absolute left-1.5 top-1/2 -translate-y-1/2 h-[34px] w-[34px] rounded-[10px] bg-[#5B7943] flex items-center justify-center pointer-events-none z-10">
-                  <Calendar className="h-[18px] w-[18px] text-white" strokeWidth={2.5} />
-                </div>
-                <input
-                  type="date"
-                  className="h-12 w-full rounded-[14px] border border-white/50 pl-[52px] pr-4 outline-none focus:ring-2 focus:ring-[#5B7943]/50 transition-all text-sm text-gray-800 cursor-pointer"
-                  style={{
-                    backgroundColor: "#EEF0E5",
-                    boxShadow: "0 6px 12px -2px rgba(0,0,0,0.06), inset 0 2px 4px rgba(255,255,255,0.5)",
-                    colorScheme: "light",
-                  }}
+        <div className="mt-7 space-y-8">
+          <div className="space-y-5">
+            <SectionHeading>Informasi Umum</SectionHeading>
+            <div className="grid grid-cols-1 gap-x-8 gap-y-6 md:grid-cols-2">
+              <div className="flex flex-col gap-5">
+                <TextField
+                  id="unit-penangkar"
+                  label="Unit Penangkar"
+                  value={formData.namaPenangkaran}
+                  onChange={(value) => setField("namaPenangkaran", value)}
+                />
+                <TextField
+                  id="nama-direktur"
+                  label="Nama Direktur / Penanggung Jawab"
+                  value={formData.namaDirektur}
+                  onChange={(value) => setField("namaDirektur", value)}
+                />
+                <TextField
+                  id="nomor-telepon"
+                  label="Nomor Telepon"
+                  value={formData.nomorTelepon}
+                  onChange={(value) => setField("nomorTelepon", value)}
+                />
+                <TextField
+                  id="alamat-penangkaran"
+                  label="Alamat Penangkaran"
+                  value={formData.alamatPenangkaran}
+                  onChange={(value) => setField("alamatPenangkaran", value)}
+                  icon="location"
                 />
               </div>
-            </div>
-
-            <InputField label="Penerbit" />
-
-            {/* Akhir Masa Berlaku Izin */}
-            <div className="flex flex-col gap-2">
-              <label className="text-[13px] font-extrabold text-[#111] ml-1">
-                Akhir Masa Berlaku Izin
-              </label>
-              <div className="relative">
-                <div className="absolute left-1.5 top-1/2 -translate-y-1/2 h-[34px] w-[34px] rounded-[10px] bg-[#5B7943] flex items-center justify-center pointer-events-none z-10">
-                  <Calendar className="h-[18px] w-[18px] text-white" strokeWidth={2.5} />
-                </div>
-                <input
-                  type="date"
-                  className="h-12 w-full rounded-[14px] border border-white/50 pl-[52px] pr-4 outline-none focus:ring-2 focus:ring-[#5B7943]/50 transition-all text-sm text-gray-800 cursor-pointer"
-                  style={{
-                    backgroundColor: "#EEF0E5",
-                    boxShadow: "0 6px 12px -2px rgba(0,0,0,0.06), inset 0 2px 4px rgba(255,255,255,0.5)",
-                    colorScheme: "light",
-                  }}
+              <div className="flex flex-col gap-5">
+                <SelectField
+                  id="bidang-ksda"
+                  label="Bidang KSDA"
+                  value={formData.bidangWilayahId}
+                  onChange={(value) => setField("bidangWilayahId", value)}
+                  options={BIDANG_OPTIONS}
+                />
+                <SelectField
+                  id="seksi-konservasi"
+                  label="Seksi Konservasi"
+                  value={formData.seksiWilayahId}
+                  onChange={(value) => setField("seksiWilayahId", value)}
+                  options={SEKSI_OPTIONS}
+                />
+                <TextField
+                  id="alamat-kantor"
+                  label="Alamat Kantor"
+                  value={formData.alamatKantor}
+                  onChange={(value) => setField("alamatKantor", value)}
+                  icon="location"
+                />
+                <TextField
+                  id="koordinat-penangkaran"
+                  label="Koordinat Penangkaran"
+                  value={formData.koordinatLokasi}
+                  onChange={(value) => setField("koordinatLokasi", value)}
+                  icon="location"
                 />
               </div>
             </div>
           </div>
 
-          {/* Right Column */}
-          <div className="flex flex-col gap-6">
-            {/* Jenis TSL Select */}
-            <div className="flex flex-col gap-2">
-              <label className="text-[13px] font-extrabold text-[#111] ml-1">
-                Jenis TSL
-              </label>
-              <div className="relative">
-                <select
-                  className="h-12 w-full rounded-[14px] border border-white/50 pl-4 pr-[52px] outline-none appearance-none focus:ring-2 focus:ring-[#5B7943]/50 transition-all text-sm text-gray-800"
-                  style={{
-                    backgroundColor: "#EEF0E5",
-                    boxShadow: "0 6px 12px -2px rgba(0,0,0,0.06), inset 0 2px 4px rgba(255,255,255,0.5)",
-                  }}
-                >
-                  <option value=""></option>
-                </select>
-                <div className="absolute right-1.5 top-1/2 -translate-y-1/2 h-[34px] w-[34px] rounded-[10px] bg-[#5B7943] flex items-center justify-center pointer-events-none">
-                  <ChevronDown className="h-[18px] w-[18px] text-white" strokeWidth={2.5} />
-                </div>
+          <div className="space-y-5">
+            <SectionHeading>Informasi Perizinan</SectionHeading>
+            <div className="grid grid-cols-1 gap-x-8 gap-y-6 md:grid-cols-2">
+              <div className="flex flex-col gap-5">
+                <TextField
+                  id="nomor-sk"
+                  label="Nomor SK / Sertifikat Standar"
+                  value={formData.nomorSk}
+                  onChange={(value) => setField("nomorSk", value)}
+                />
+                
+                <FileField
+                  id="sertifikat-standar"
+                  label="SK / Sertifikat Standar"
+                  fileName={selectedFileName}
+                  note="Pastikan file bertipe .pdf"
+                  onPick={openFilePicker}
+                />
+                <TextField
+                  id="penerbit"
+                  label="Penerbit"
+                  value={formData.penerbit}
+                  onChange={(value) => setField("penerbit", value)}
+                />
+              </div>
+              <div className="flex flex-col gap-5">
+                <DateField
+                  id="tanggal-sk"
+                  label="Tanggal SK / Sertifikat Standar"
+                  value={formData.tanggalSk}
+                  onChange={(value) => setField("tanggalSk", value)}
+                />
+                <DateField
+                  id="akhir-masa-berlaku"
+                  label="Akhir Masa Berlaku Izin"
+                  value={formData.akhirMasaBerlaku}
+                  onChange={(value) => setField("akhirMasaBerlaku", value)}
+                />
               </div>
             </div>
+          </div>
 
-            <InputField label="Nama TSL" />
+          <div className="space-y-5">
+            <SectionHeading>Informasi TSL</SectionHeading>
+            <div className="flex flex-col gap-5">
+              <SelectField
+                id="jenis-tsl"
+                label="Jenis TSL"
+                value={formData.tslId}
+                onChange={(value) => setField("tslId", value)}
+                options={referensiList.map((item) => ({
+                  value: String(item.id),
+                  label: item.namaDaerah || "-",
+                }))}
+                placeholder="-- Pilih Jenis TSL --"
+                fullWidth
+              />
 
-            {/* Split Row: Status Perlindungan Nasional & Status CITES */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <InputField label="Status Perlindungan Nasional" />
-              {/* Status CITES Dropdown */}
-              <div className="flex flex-col gap-2">
-                <label className="text-[13px] font-extrabold text-[#111] ml-1">
-                  Status CITES
-                </label>
-                <div className="relative">
-                  <select
-                    className="h-12 w-full rounded-[14px] border border-white/50 pl-4 pr-[44px] outline-none appearance-none focus:ring-2 focus:ring-[#5B7943]/50 transition-all text-sm text-gray-800"
-                    style={{
-                      backgroundColor: "#EEF0E5",
-                      boxShadow: "0 6px 12px -2px rgba(0,0,0,0.06), inset 0 2px 4px rgba(255,255,255,0.5)",
-                    }}
-                  >
-                    <option value="">-- Pilih Status --</option>
-                    <option value="appendix-i">Appendix I</option>
-                    <option value="appendix-ii">Appendix II</option>
-                    <option value="appendix-iii">Appendix III</option>
-                  </select>
-                  <div className="absolute right-1.5 top-1/2 -translate-y-1/2 h-[30px] w-[30px] rounded-[8px] bg-[#5B7943] flex items-center justify-center pointer-events-none">
-                    <ChevronDown className="h-4 w-4 text-white" strokeWidth={2.5} />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <InputField label="Nama Direktur / Penanggung Jawab" />
-            <InputField label="No Telepon" />
-
-            {/* Split Row: Bidang KSDA Wilayah & Seksi Konservasi Wilayah */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="flex flex-col gap-2">
-                <label className="text-[13px] font-extrabold text-[#111] ml-1">
-                  Bidang KSDA Wilayah
-                </label>
-                <div className="relative">
-                  <select
-                    className="h-12 w-full rounded-[14px] border border-white/50 pl-4 pr-[44px] outline-none appearance-none focus:ring-2 focus:ring-[#5B7943]/50 transition-all text-sm text-gray-800"
-                    style={{
-                      backgroundColor: "#EEF0E5",
-                      boxShadow: "0 6px 12px -2px rgba(0,0,0,0.06), inset 0 2px 4px rgba(255,255,255,0.5)",
-                    }}
-                  >
-                    <option value="">-- Pilih Bidang --</option>
-                    <option value="I">I – Bogor</option>
-                    <option value="II">II – Soreang</option>
-                    <option value="III">III – Ciamis</option>
-                  </select>
-                  <div className="absolute right-1.5 top-1/2 -translate-y-1/2 h-[30px] w-[30px] rounded-[8px] bg-[#5B7943] flex items-center justify-center pointer-events-none">
-                    <ChevronDown className="h-4 w-4 text-white" strokeWidth={2.5} />
-                  </div>
-                </div>
-              </div>
-              <div className="flex flex-col gap-2">
-                <label className="text-[13px] font-extrabold text-[#111] ml-1">
-                  Seksi Konservasi Wilayah
-                </label>
-                <div className="relative">
-                  <select
-                    className="h-12 w-full rounded-[14px] border border-white/50 pl-4 pr-[44px] outline-none appearance-none focus:ring-2 focus:ring-[#5B7943]/50 transition-all text-sm text-gray-800"
-                    style={{
-                      backgroundColor: "#EEF0E5",
-                      boxShadow: "0 6px 12px -2px rgba(0,0,0,0.06), inset 0 2px 4px rgba(255,255,255,0.5)",
-                    }}
-                  >
-                    <option value="">-- Pilih Seksi --</option>
-                    <option value="I">I – Serang</option>
-                    <option value="II">II – Bogor</option>
-                    <option value="III">III – Soreang</option>
-                    <option value="IV">IV – Purwakarta</option>
-                    <option value="V">V – Garut</option>
-                    <option value="VI">VI – Tasikmalaya</option>
-                  </select>
-                  <div className="absolute right-1.5 top-1/2 -translate-y-1/2 h-[30px] w-[30px] rounded-[8px] bg-[#5B7943] flex items-center justify-center pointer-events-none">
-                    <ChevronDown className="h-4 w-4 text-white" strokeWidth={2.5} />
-                  </div>
-                </div>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <TextField
+                  id="indukan-jantan"
+                  label="Indukan Jantan"
+                  value={formData.indukanJantan}
+                  onChange={(value) => setField("indukanJantan", value)}
+                />
+                <TextField
+                  id="indukan-betina"
+                  label="Indukan Betina"
+                  value={formData.indukanBetina}
+                  onChange={(value) => setField("indukanBetina", value)}
+                />
               </div>
             </div>
           </div>
         </div>
 
-        {/* Footer Actions */}
-        <div className="mt-10 flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-3">
-          {/* Kiri: Hapus */}
-          <button className="flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-red-600 hover:bg-red-700 px-6 py-3.5 text-sm font-bold text-white shadow-[0_4px_14px_rgba(220,38,38,0.3)] transition-all active:scale-95">
-            <Trash2 className="h-5 w-5" strokeWidth={2.5} />
-            Hapus
-          </button>
-          {/* Kanan: Batal + Simpan */}
-          <div className="flex items-center gap-3">
+        <footer className="mt-8 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+          <div className="text-[11px] font-medium text-[#8b8b8b]">
+            Created at {formatFooterDate(data?.createdAt)} by Admin Pusat
+          </div>
+
+          <div className="flex flex-col items-end gap-3">
+            <div className="text-[11px] font-medium text-[#8b8b8b]">
+              Updated at {formatFooterDate(data?.updatedAt)} by Admin Pusat
+            </div>
             <button
-              onClick={onClose}
-              className="flex flex-1 sm:flex-none items-center justify-center gap-2 rounded-xl bg-amber-500 hover:bg-amber-600 px-6 py-3.5 text-sm font-bold text-white shadow-[0_4px_14px_rgba(245,158,11,0.35)] transition-all active:scale-95"
+              type="button"
+              onClick={handleSave}
+              disabled={isLoading}
+              className="inline-flex items-center gap-2 rounded-md bg-[#ffa31a] px-4 py-2 text-[13px] font-medium text-white shadow-[0_6px_16px_rgba(255,163,26,0.26)] transition-colors hover:bg-[#f39500] disabled:opacity-60"
             >
-              <X className="h-5 w-5" strokeWidth={2.5} />
-              Batal
-            </button>
-            <button className="flex flex-1 sm:flex-none items-center justify-center gap-2 rounded-xl bg-[#5B7943] hover:bg-[#4a6336] px-6 py-3.5 text-sm font-bold text-white shadow-[0_4px_14px_rgba(91,121,67,0.3)] transition-all active:scale-95">
-              <Save className="h-5 w-5" strokeWidth={2.5} />
-              Simpan
+              <Pencil className="h-4.5 w-4.5" strokeWidth={2.5} />
+              {isLoading ? "Menyimpan..." : "Perbarui"}
             </button>
           </div>
-        </div>
+        </footer>
+
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".pdf"
+          className="hidden"
+          onChange={(event) => setSelectedFileName(event.target.files?.[0]?.name ?? "")}
+        />
       </div>
     </div>
   );
 }
 
-function InputField({ label }: { label: string }) {
+const BIDANG_OPTIONS = [
+  { label: "I - Bogor", value: "1" },
+  { label: "II - Soreang", value: "2" },
+  { label: "III - Ciamis", value: "3" },
+];
+
+const SEKSI_OPTIONS = [
+  { label: "I - Serang", value: "4" },
+  { label: "II - Bogor", value: "5" },
+  { label: "III - Soreang", value: "6" },
+  { label: "IV - Purwakarta", value: "7" },
+  { label: "V - Garut", value: "8" },
+  { label: "VI - Tasikmalaya", value: "9" },
+];
+
+function SectionHeading({ children }: Readonly<{ children: React.ReactNode }>) {
+  return <div className="text-[14px] font-semibold text-[#9aa51f]">{children}</div>;
+}
+
+type TextFieldProps = Readonly<{
+  id: string;
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  icon?: "location";
+}>;
+
+function TextField({ id, label, value, onChange, icon }: TextFieldProps) {
   return (
-    <div className="flex flex-col gap-2">
-      <label className="text-[13px] font-extrabold text-[#111] ml-1">
+    <div className="flex flex-col gap-1.5">
+      <label htmlFor={id} className="text-[12px] font-medium text-[#8f8f7e]">
         {label}
       </label>
-      <input
-        type="text"
-        className="h-12 w-full rounded-[14px] border border-white/50 px-4 outline-none focus:ring-2 focus:ring-[#5B7943]/50 transition-all text-sm text-gray-800"
-        style={{
-          backgroundColor: "#EEF0E5",
-          boxShadow: "0 6px 12px -2px rgba(0,0,0,0.06), inset 0 2px 4px rgba(255,255,255,0.5)",
-        }}
-      />
+      <div className="relative">
+        {icon === "location" && (
+          <span className="pointer-events-none absolute left-1.5 top-1/2 z-10 -translate-y-1/2 inline-flex h-.5 w-.5 items-center justify-center text-[#9aa51f]">
+            <MapPin className="h-4.5 w-4.5" strokeWidth={2.5} />
+          </span>
+        )}
+        <input
+          id={id}
+          type="text"
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          className={`h-9 w-full rounded-[3px] border border-[#c9d0b6] bg-white text-[12px] text-gray-800 outline-none focus:ring-1 focus:ring-[#9aa51f] ${
+            icon === "location" ? "pl-11" : "px-3"
+          }`}
+        />
+      </div>
+    </div>
+  );
+}
+
+type SelectFieldProps = Readonly<{
+  id: string;
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  options: { label: string; value: string }[];
+  placeholder?: string;
+  fullWidth?: boolean;
+}>;
+
+function SelectField({ id, label, value, onChange, options, placeholder = "", fullWidth = false }: SelectFieldProps) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <label htmlFor={id} className="text-[12px] font-medium text-[#8f8f7e]">
+        {label}
+      </label>
+      <div className="relative">
+        <select
+          id={id}
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          className={`h-9 w-full appearance-none rounded-[3px] border border-[#c9d0b6] bg-white text-[12px] text-gray-800 outline-none focus:ring-1 focus:ring-[#9aa51f] ${
+            fullWidth ? "pl-3 pr-11" : "px-3 pr-8"
+          }`}
+        >
+          <option value="">{placeholder}</option>
+          {options.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+        <span className="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 inline-flex h-4.5 w-4.5 items-center justify-center rounded-full border border-[#9aa51f] text-[#9aa51f]">
+          <ChevronDown className="h-4.5 w-4.5" strokeWidth={2.5} />
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function DateField({ id, label, value, onChange }: Readonly<{ id: string; label: string; value: string; onChange: (v: string) => void }>) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <label htmlFor={id} className="text-[12px] font-medium text-[#8f8f7e]">
+        {label}
+      </label>
+      <div className="relative">
+        <span className="pointer-events-none absolute left-1.5 top-1/2 z-10 -translate-y-1/2 inline-flex h-8.5 w-8.5 items-center justify-center text-[#9aa51f]">
+          <Calendar className="h-4.5 w-4.5" strokeWidth={2.5} />
+        </span>
+        <input
+          id={id}
+          type="date"
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          className="h-9 w-full rounded-[3px] border border-[#c9d0b6] bg-white pl-11 pr-3 text-[12px] text-gray-800 outline-none focus:ring-1 focus:ring-[#9aa51f]"
+        />
+      </div>
+    </div>
+  );
+}
+
+function FileField({ id, label, fileName, note, onPick }: Readonly<{ id: string; label: string; fileName: string; note: string; onPick: () => void }>) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <label htmlFor={id} className="text-[12px] font-medium text-[#8f8f7e]">
+        {label}
+      </label>
+      <div className="flex h-9 overflow-hidden rounded-[3px] border border-[#c9d0b6] bg-white">
+        <button
+          type="button"
+          onClick={onPick}
+          className="inline-flex items-center gap-2 border-r border-[#c9d0b6] bg-[#f6f7e8] px-3 text-[12px] font-medium text-[#9aa51f] transition-colors hover:bg-[#eef1d1]"
+        >
+          <FileText className="h-3.5 w-3.5" strokeWidth={2.4} />
+          Pilih file
+        </button>
+        <div className="flex min-w-0 flex-1 items-center px-3 text-[12px] text-gray-400">
+          <span className="truncate">{fileName || ""}</span>
+        </div>
+      </div>
+      <p className="text-[10px] text-gray-400">{note}</p>
     </div>
   );
 }

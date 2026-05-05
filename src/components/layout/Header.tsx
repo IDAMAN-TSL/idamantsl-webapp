@@ -1,8 +1,47 @@
+"use client";
+
 import Image from "next/image";
 import { UserCircle, Menu, Bell } from "lucide-react";
 import LogoIcon from "@/assets/icon/Logo.svg";
+import { useEffect, useState } from "react";
 
 export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
+  const [user, setUser] = useState<{ nama: string; role: string } | null>(null);
+
+  useEffect(() => {
+    const userStr = localStorage.getItem("user");
+    if (userStr) {
+      try {
+        const parsed = JSON.parse(userStr);
+        setUser(parsed);
+      } catch (e) {
+        console.error("Failed to parse user data", e);
+      }
+    }
+  }, []);
+
+  const getInitials = (name: string) => {
+    if (!name) return "JD";
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .substring(0, 2)
+      .toUpperCase();
+  };
+
+  const formatRole = (role: string) => {
+    if (!role) return "Admin Pusat";
+    return role
+      .split("_")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(" ");
+  };
+
+  const displayName = user?.nama || "John Doe";
+  const displayRole = formatRole(user?.role || "");
+  const initials = getInitials(displayName);
+
   return (
     <header className="flex h-[88px] shrink-0 items-center justify-between border-b border-gray-200 bg-white px-4 md:px-8">
       {/* Left: Burger + Logo (mobile only) */}
@@ -36,27 +75,28 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
       <div className="hidden md:block" />
 
       {/* Right Section: Notification + Account */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-6">
         {/* Notification Bell */}
-        <button className="flex h-10 w-10 items-center justify-center rounded-lg text-gray-600 hover:bg-gray-50 transition-colors relative">
-          <Bell className="h-5 w-5" />
-          <span className="absolute top-2 right-2 h-2 w-2 bg-yellow-400 rounded-full"></span>
+        <button className="flex h-10 w-10 items-center justify-center rounded-full text-gray-500 hover:bg-gray-50 transition-colors">
+          <Bell className="h-6 w-6" strokeWidth={1.5} />
         </button>
 
         {/* Account Info */}
-        <button className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors">
+        <div className="flex items-center gap-3">
           <div className="flex flex-col items-end">
-            <span className="text-sm font-semibold text-gray-900">
-              John Doe
+            <span className="text-[14px] font-bold text-[#111111]">
+              {displayName}
             </span>
-            <span className="text-xs text-gray-500">
-              Pusat BBKSDA Jabar
+            <span className="text-[12px] text-[#8E8E8E]">
+              {displayRole}
             </span>
           </div>
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gray-200">
-            <UserCircle className="h-6 w-6 text-gray-600" />
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#E5E7EB] border border-gray-100 overflow-hidden">
+            <div className="flex h-full w-full items-center justify-center bg-[#595959] text-white text-xs font-bold">
+              {initials}
+            </div>
           </div>
-        </button>
+        </div>
       </div>
     </header>
   );
