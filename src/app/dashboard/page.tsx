@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   LineChart,
   Line,
@@ -159,7 +159,29 @@ const statCards = [
 ];
 
 export default function DashboardPage() {
-  const [selectedYear] = useState(2025);
+  const [selectedYear] = useState(2026);
+  const [user, setUser] = useState<{ nama: string; role: string } | null>(null);
+
+  useEffect(() => {
+    const userStr = localStorage.getItem("user");
+    if (userStr) {
+      try {
+        setUser(JSON.parse(userStr));
+      } catch (e) {
+        console.error("Failed to parse user data", e);
+      }
+    }
+  }, []);
+
+  const formatRole = (role: string) => {
+    if (!role) return "Admin Pusat";
+    return role
+      .split("_")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(" ");
+  };
+
+  const displayRole = formatRole(user?.role || "");
 
   return (
     <div className="flex flex-col gap-6 w-full">
@@ -167,7 +189,7 @@ export default function DashboardPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-gray-900">
-            Selamat Datang, Admin Pusat BBKSDA Jabar!
+            Selamat Datang, {displayRole} BBKSDA Jabar!
           </h1>
           <p className="mt-2 text-base text-gray-600">
             Lihat ringkasan inti informasi data pemanfaatan tumbuhan dan satwa liar

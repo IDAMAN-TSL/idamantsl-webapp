@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, X } from "lucide-react";
+import { CheckCircle2, X } from "lucide-react";
 
 interface VerifikasiAcceptModalProps {
   isOpen: boolean;
@@ -16,44 +16,43 @@ export function VerifikasiAcceptModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/35 p-4 backdrop-blur-[2px]">
-      <div className="relative w-full max-w-sm rounded-[22px] bg-white px-6 py-5 shadow-[0_20px_50px_-15px_rgba(0,0,0,0.28)]">
-        <button
-          onClick={onClose}
-          className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700"
-          aria-label="Tutup modal"
-        >
-          <X className="h-5 w-5" strokeWidth={2.5} />
-        </button>
-
-        <div className="flex items-start gap-3 pr-8">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-green-50">
-            <Check className="h-5 w-5 text-green-600" strokeWidth={2.5} />
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
+      <div className="relative w-full max-w-[500px] rounded-2xl bg-white p-6 shadow-xl md:p-8">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="flex h-[42px] w-[42px] items-center justify-center rounded-xl border border-[#9ED49A] bg-[#EAF7E5]">
+              <CheckCircle2 className="h-5 w-5 text-[#49A043]" strokeWidth={2} />
+            </div>
+            <h2 className="text-[17px] font-medium text-[#1A1A1A]">Terima Data</h2>
           </div>
-
-          <div className="pt-0.5">
-            <h3 className="text-[15px] font-semibold text-gray-900">Terima Data</h3>
-          </div>
+          <button
+            onClick={onClose}
+            className="text-gray-400 transition-colors hover:text-gray-600"
+            aria-label="Tutup modal"
+          >
+            <X className="h-7 w-7" strokeWidth={1} />
+          </button>
         </div>
 
-        <p className="mt-4 text-[14px] text-gray-700">
-          Apakah Anda yakin menerima data ini?
-        </p>
+        {/* Body */}
+        <div className="mt-6">
+          <h3 className="text-[18px] font-semibold text-[#1A1A1A]">
+            Apakah Anda yakin menerima data ini?
+          </h3>
+          <p className="mt-1.5 text-[15px] text-[#808080]">
+            Data ini akan diterima dan disimpan dalam database IDAMAN TSL
+          </p>
+        </div>
 
-        <div className="mt-6 flex justify-end gap-3">
-          <button
-            type="button"
-            onClick={onClose}
-            className="inline-flex items-center justify-center rounded-lg border border-gray-200 bg-white px-4 py-2 text-[13px] font-semibold text-gray-700 transition-colors hover:bg-gray-50"
-          >
-            Batal
-          </button>
+        {/* Footer */}
+        <div className="mt-8 flex justify-end">
           <button
             type="button"
             onClick={onConfirm}
-            className="inline-flex items-center justify-center gap-2 rounded-lg bg-green-600 px-4 py-2 text-[13px] font-semibold text-white transition-colors hover:bg-green-700"
+            className="inline-flex items-center gap-2 rounded-xl border border-[#9ED49A] bg-[#EAF7E5] px-6 py-2.5 text-[15px] font-medium text-[#49A043] transition-colors hover:bg-[#DCF0D6]"
           >
-            <Check className="h-4 w-4" strokeWidth={2.5} />
+            <CheckCircle2 className="h-5 w-5" strokeWidth={2} />
             Terima
           </button>
         </div>

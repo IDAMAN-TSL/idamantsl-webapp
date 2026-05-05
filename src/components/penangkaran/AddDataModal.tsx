@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Calendar,
   ChevronDown,
@@ -15,13 +15,48 @@ import {
 interface AddDataModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onSuccess?: () => void;
 }
 
 const steps = ["Informasi Umum", "Informasi Perizinan", "Informasi TSL"];
 
-export function AddDataModal({ isOpen, onClose }: Readonly<AddDataModalProps>) {
+export function AddDataModal({ isOpen, onClose, onSuccess }: Readonly<AddDataModalProps>) {
   const [step, setStep] = useState(0);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [formData, setFormData] = useState({
+    namaPenangkaran: "",
+    namaDirektur: "",
+    nomorTelepon: "",
+    alamatPenangkaran: "",
+    bidangWilayahId: "",
+    seksiWilayahId: "",
+    alamatKantor: "",
+    koordinatLokasi: "",
+    nomorSk: "",
+    penerbit: "",
+    tanggalSk: "",
+    akhirMasaBerlaku: "",
+    tslId: "",
+    indukanJantan: "",
+    indukanBetina: "",
+  });
+
+  const setField = (key: keyof typeof formData, value: string) =>
+    setFormData((prev) => ({ ...prev, [key]: value }));
+
+  // ─── Fetch Referensi TSL ───────────────────────────────────────────────────
+  const [referensiList, setReferensiList] = useState<{ id: number; namaDaerah: string }[]>([]);
+  useEffect(() => {
+    const token = globalThis.window === undefined ? null : localStorage.getItem("token");
+    const url = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+    fetch(`${url}/api/referensi-tsl`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((r) => r.json())
+      .then((json) => setReferensiList(json.data ?? []))
+      .catch(() => {});
+  }, []);
 
   if (!isOpen) return null;
 
@@ -30,11 +65,65 @@ export function AddDataModal({ isOpen, onClose }: Readonly<AddDataModalProps>) {
   const closeAndReset = () => {
     setStep(0);
     setSelectedFile(null);
+    setFormData({
+      namaPenangkaran: "", namaDirektur: "", nomorTelepon: "",
+      alamatPenangkaran: "", bidangWilayahId: "", seksiWilayahId: "",
+      alamatKantor: "", koordinatLokasi: "", nomorSk: "",
+      penerbit: "", tanggalSk: "", akhirMasaBerlaku: "", tslId: "",
+      indukanJantan: "", indukanBetina: "",
+    });
     onClose();
   };
 
-  const handleSubmit = () => {
-    closeAndReset();
+  const handleSubmit = async () => {
+    try {
+      setIsLoading(true);
+      const token = globalThis.window === undefined ? null : localStorage.getItem("token");
+      const url = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+
+      const parseNullableNumber = (value: string) => {
+        const trimmed = value.trim();
+        if (!trimmed) return null;
+        const parsed = Number(trimmed);
+        return Number.isNaN(parsed) ? null : parsed;
+      };
+
+      const payload = {
+        namaPenangkaran: formData.namaPenangkaran,
+        namaDirektur: formData.namaDirektur,
+        nomorTelepon: formData.nomorTelepon,
+        alamatPenangkaran: formData.alamatPenangkaran,
+        alamatKantor: formData.alamatKantor,
+        koordinatLokasi: formData.koordinatLokasi,
+        nomorSk: formData.nomorSk,
+        penerbit: formData.penerbit,
+        tanggalSk: formData.tanggalSk || null,
+        akhirMasaBerlaku: formData.akhirMasaBerlaku || null,
+        bidangWilayahId: formData.bidangWilayahId ? Number(formData.bidangWilayahId) : null,
+        seksiWilayahId: formData.seksiWilayahId ? Number(formData.seksiWilayahId) : null,
+        tslId: formData.tslId ? Number(formData.tslId) : null,
+        indukanJantan: parseNullableNumber(formData.indukanJantan),
+        indukanBetina: parseNullableNumber(formData.indukanBetina),
+      };
+
+      const res = await fetch(`${url}/api/penangkaran`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify(payload),
+      });
+      const result = await res.json();
+      if (result.success) {
+        if (onSuccess) onSuccess();
+        closeAndReset();
+      } else {
+        alert(result.message || "Gagal menambah data");
+      }
+    } catch (error) {
+      console.error("Error:", error);
+      alert("Terjadi kesalahan sistem");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -78,27 +167,22 @@ export function AddDataModal({ isOpen, onClose }: Readonly<AddDataModalProps>) {
         {step === 0 && (
           <div className="mt-5 grid grid-cols-1 gap-x-6 gap-y-4 md:grid-cols-2">
             <div className="flex flex-col gap-4">
-              <Field label="Unit Penangkar" />
-              <Field label="Nama Direktur / Penanggung Jawab" />
-              <Field label="Nomor Telepon" />
-              <Field label="Alamat Penangkaran" withLocationIcon />
+              <Field label="Unit Penangkar" value={formData.namaPenangkaran} onChange={(v) => setField("namaPenangkaran", v)} />
+              <Field label="Nama Direktur / Penanggung Jawab" value={formData.namaDirektur} onChange={(v) => setField("namaDirektur", v)} />
+              <Field label="Nomor Telepon" value={formData.nomorTelepon} onChange={(v) => setField("nomorTelepon", v)} />
+              <Field label="Alamat Penangkaran" withLocationIcon value={formData.alamatPenangkaran} onChange={(v) => setField("alamatPenangkaran", v)} />
             </div>
 
             <div className="flex flex-col gap-4">
-              <SelectField label="Bidang KSDA" options={["I. Bogor", "II. Soreang", "III. Ciamis"]} />
-              <SelectField
-                label="Seksi Konservasi"
-                options={[
-                  "I. Serang",
-                  "II. Bogor",
-                  "III. Soreang",
-                  "IV. Purwakarta",
-                  "V. Garut",
-                  "VI. Tasikmalaya",
-                ]}
-              />
-              <Field label="Alamat Kantor" withLocationIcon />
-              <Field label="Koordinat Penangkaran" withLocationIcon />
+              <SelectField label="Bidang KSDA" options={[
+                { label: "I. Bogor", value: "1" }, { label: "II. Soreang", value: "2" }, { label: "III. Ciamis", value: "3" }
+              ]} value={formData.bidangWilayahId} onChange={(v) => setField("bidangWilayahId", v)} />
+              <SelectField label="Seksi Konservasi" options={[
+                { label: "I. Serang", value: "4" }, { label: "II. Bogor", value: "5" }, { label: "III. Soreang", value: "6" },
+                { label: "IV. Purwakarta", value: "7" }, { label: "V. Garut", value: "8" }, { label: "VI. Tasikmalaya", value: "9" },
+              ]} value={formData.seksiWilayahId} onChange={(v) => setField("seksiWilayahId", v)} />
+              <Field label="Alamat Kantor" withLocationIcon value={formData.alamatKantor} onChange={(v) => setField("alamatKantor", v)} />
+              <Field label="Koordinat Penangkaran" withLocationIcon value={formData.koordinatLokasi} onChange={(v) => setField("koordinatLokasi", v)} />
             </div>
           </div>
         )}
@@ -106,18 +190,18 @@ export function AddDataModal({ isOpen, onClose }: Readonly<AddDataModalProps>) {
         {step === 1 && (
           <div className="mt-5 grid grid-cols-1 gap-x-6 gap-y-4 md:grid-cols-2">
             <div className="flex flex-col gap-4">
-              <Field label="Nomor SK / Sertifikat Standar" />
+              <Field label="Nomor SK / Sertifikat Standar" value={formData.nomorSk} onChange={(v) => setField("nomorSk", v)} />
               <FilePicker
                 label="SK / Sertifikat Standar"
                 fileName={selectedFile?.name}
                 onPick={() => document.getElementById("add-data-upload-input")?.click()}
               />
-              <Field label="Penerbit" />
+              <Field label="Penerbit" value={formData.penerbit} onChange={(v) => setField("penerbit", v)} />
             </div>
 
             <div className="flex flex-col gap-4">
-              <DateField label="Tanggal SK / Sertifikat Standar" />
-              <DateField label="Akhir Masa Berlaku Izin" />
+              <DateField label="Tanggal SK / Sertifikat Standar" value={formData.tanggalSk} onChange={(v) => setField("tanggalSk", v)} />
+              <DateField label="Akhir Masa Berlaku Izin" value={formData.akhirMasaBerlaku} onChange={(v) => setField("akhirMasaBerlaku", v)} />
             </div>
 
             <input
@@ -133,19 +217,16 @@ export function AddDataModal({ isOpen, onClose }: Readonly<AddDataModalProps>) {
         {step === 2 && (
           <div className="mt-5 grid grid-cols-1 gap-x-6 gap-y-4 md:grid-cols-2">
             <div className="md:col-span-2">
-              <SelectField
+              <TslSearchField
                 label="Jenis TSL"
-                options={[
-                  "Tumbuhan",
-                  "Satwa",
-                  "Tumbuhan dan Satwa",
-                ]}
-                fullWidth
+                options={referensiList}
+                value={formData.tslId}
+                onChange={(v) => setField("tslId", v)}
               />
             </div>
 
-            <Field label="Indukan Jantan" />
-            <Field label="Indukan Betina" />
+            <Field label="Indukan Jantan" value={formData.indukanJantan} onChange={(v) => setField("indukanJantan", v)} />
+            <Field label="Indukan Betina" value={formData.indukanBetina} onChange={(v) => setField("indukanBetina", v)} />
           </div>
         )}
 
@@ -179,10 +260,11 @@ export function AddDataModal({ isOpen, onClose }: Readonly<AddDataModalProps>) {
               <button
                 type="button"
                 onClick={handleSubmit}
-                className="inline-flex items-center gap-2 rounded-md bg-[#8E9E25] px-4 py-2 text-[12px] font-medium text-white transition-colors hover:bg-[#7e8d20]"
+                disabled={isLoading}
+                className="inline-flex items-center gap-2 rounded-md bg-[#8E9E25] px-4 py-2 text-[12px] font-medium text-white transition-colors hover:bg-[#7e8d20] disabled:opacity-50"
               >
                 <Plus className="h-4 w-4" strokeWidth={2.2} />
-                Tambah
+                {isLoading ? "Menyimpan..." : "Tambah"}
               </button>
             )}
           </div>
@@ -195,15 +277,19 @@ export function AddDataModal({ isOpen, onClose }: Readonly<AddDataModalProps>) {
 type FieldProps = Readonly<{
   label: string;
   withLocationIcon?: boolean;
+  value: string;
+  onChange: (v: string) => void;
 }>;
 
-function Field({ label, withLocationIcon = false }: FieldProps) {
+function Field({ label, withLocationIcon = false, value, onChange }: FieldProps) {
   return (
     <div className="flex flex-col gap-1.5">
       <label className="text-[12px] text-gray-500">{label}</label>
       <div className="relative">
         <input
           type="text"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
           className={`h-8 w-full rounded-[3px] border border-[#C7D0AF] bg-white px-3 text-[12px] text-gray-800 outline-none focus:ring-1 focus:ring-[#8E9E25] ${
             withLocationIcon ? "pl-7" : ""
           }`}
@@ -222,24 +308,30 @@ function SelectField({
   label,
   options,
   fullWidth = false,
+  value,
+  onChange,
 }: Readonly<{
   label: string;
-  options: string[];
+  options: { label: string; value: string }[];
   fullWidth?: boolean;
+  value: string;
+  onChange: (v: string) => void;
 }>) {
   return (
     <div className="flex flex-col gap-1.5">
       <label className="text-[12px] text-gray-500">{label}</label>
       <div className="relative">
         <select
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
           className={`h-8 w-full appearance-none rounded-[3px] border border-[#C7D0AF] bg-white px-3 text-[12px] text-gray-800 outline-none focus:ring-1 focus:ring-[#8E9E25] ${
             fullWidth ? "" : "pr-7"
           }`}
         >
           <option value=""></option>
           {options.map((option) => (
-            <option key={option} value={option}>
-              {option}
+            <option key={option.value} value={option.value}>
+              {option.label}
             </option>
           ))}
         </select>
@@ -251,13 +343,15 @@ function SelectField({
   );
 }
 
-function DateField({ label }: Readonly<{ label: string }>) {
+function DateField({ label, value, onChange }: Readonly<{ label: string; value: string; onChange: (v: string) => void }>) {
   return (
     <div className="flex flex-col gap-1.5">
       <label className="text-[12px] text-gray-500">{label}</label>
       <div className="relative">
         <input
           type="date"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
           className="h-8 w-full rounded-[3px] border border-[#C7D0AF] bg-white px-3 pr-7 text-[12px] text-gray-800 outline-none focus:ring-1 focus:ring-[#8E9E25]"
         />
         <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[#8E9E25]">
@@ -294,6 +388,91 @@ function FilePicker({
         </div>
       </div>
       <p className="text-[10px] text-gray-400">Pastikan file bertipe .pdf</p>
+    </div>
+  );
+}
+
+function TslSearchField({
+  label,
+  options,
+  value,
+  onChange,
+}: Readonly<{
+  label: string;
+  options: { id: number; namaDaerah: string }[];
+  value: string;
+  onChange: (v: string) => void;
+}>) {
+  const [query, setQuery] = useState("");
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const selectedLabel = options.find((o) => String(o.id) === value)?.namaDaerah ?? "";
+
+  const filtered = query
+    ? options.filter((o) => o.namaDaerah.toLowerCase().includes(query.toLowerCase()))
+    : options;
+
+  const handleSelect = (id: number, name: string) => {
+    onChange(String(id));
+    setQuery(name);
+    setOpen(false);
+  };
+
+  return (
+    <div className="flex flex-col gap-1.5" ref={ref}>
+      <label className="text-[12px] text-gray-500">{label}</label>
+      <div className="relative">
+        <input
+          type="text"
+          value={open ? query : selectedLabel}
+          placeholder="Cari nama daerah..."
+          onFocus={() => {
+            setOpen(true);
+            setQuery("");
+          }}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            setOpen(true);
+          }}
+          className="h-8 w-full rounded-[3px] border border-[#C7D0AF] bg-white px-3 pr-7 text-[12px] text-gray-800 outline-none focus:ring-1 focus:ring-[#8E9E25]"
+        />
+        <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[#8E9E25]">
+          <ChevronDown className="h-4 w-4" strokeWidth={2} />
+        </span>
+
+        {open && (
+          <div className="absolute left-0 top-full z-50 mt-1 max-h-48 w-full overflow-y-auto rounded-[4px] border border-[#C7D0AF] bg-white shadow-lg">
+            {filtered.length === 0 ? (
+              <div className="px-3 py-2 text-[12px] text-gray-400">Tidak ada data</div>
+            ) : (
+              filtered.map((opt) => (
+                <button
+                  key={opt.id}
+                  type="button"
+                  onMouseDown={() => handleSelect(opt.id, opt.namaDaerah)}
+                  className={`flex w-full items-center px-3 py-1.5 text-left text-[12px] transition-colors hover:bg-[#F6F7E6] ${
+                    String(opt.id) === value ? "bg-[#E9EDC8] font-medium text-[#8E9E25]" : "text-gray-700"
+                  }`}
+                >
+                  {opt.namaDaerah}
+                </button>
+              ))
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
