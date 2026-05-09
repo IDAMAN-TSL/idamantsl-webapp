@@ -66,7 +66,7 @@ function formatDate(value?: string | null) {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
-  }).replace(/\//g, ' '); // Example: 05 05 2026
+  }).replaceAll("/", " ");
 }
 
 export function DetailUserModal({ isOpen, onClose, userData }: Readonly<DetailUserModalProps>) {
@@ -95,17 +95,20 @@ export function DetailUserModal({ isOpen, onClose, userData }: Readonly<DetailUs
           <div className="grid grid-cols-1 gap-x-6 gap-y-4 md:grid-cols-2">
             <div className="flex flex-col gap-4">
               <ReadOnlyField
+                id="detail-nama-lengkap"
                 label="Nama Lengkap"
                 value={userData?.namaLengkap || "-"}
               />
               <ReadOnlyField
+                id="detail-email"
                 label="Email"
                 value={userData?.email || "-"}
               />
               <div className="flex flex-col gap-1.5">
-                <label className="text-[12px] font-medium text-[#A3A3A3]">Password</label>
+                <label htmlFor="detail-password" className="text-[12px] font-medium text-[#A3A3A3]">Password</label>
                 <div className="relative">
                   <input
+                    id="detail-password"
                     type={showPassword ? "text" : "password"}
                     readOnly
                     value="********"
@@ -129,17 +132,20 @@ export function DetailUserModal({ isOpen, onClose, userData }: Readonly<DetailUs
 
             <div className="flex flex-col gap-4">
               <ReadOnlyField
+                id="detail-peran"
                 label="Peran"
                 value={getPeranLabel(userData?.role, userData?.wilayahId)}
               />
               <ReadOnlyField
+                id="detail-nomor-telepon"
                 label="Nomor Telepon"
                 value={userData?.nomorTelepon || "-"}
               />
               <div className="flex flex-col gap-1.5">
-                <label className="text-[12px] font-medium text-[#A3A3A3]">Alamat Kantor</label>
+                <label htmlFor="detail-alamat-kantor" className="text-[12px] font-medium text-[#A3A3A3]">Alamat Kantor</label>
                 <div className="relative">
                   <input
+                    id="detail-alamat-kantor"
                     type="text"
                     readOnly
                     value={userData?.alamatKantor || "-"}
@@ -156,10 +162,10 @@ export function DetailUserModal({ isOpen, onClose, userData }: Readonly<DetailUs
 
         <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="text-[11px] text-[#A3A3A3]">
-            Created at {formatDate(userData?.createdAt)} by {ROLE_TO_PERAN[userData?.role || "admin_pusat"] || "Admin Pusat"}
+            Created at {formatDate(userData?.createdAt)} by Admin Pusat
           </div>
           <div className="text-[11px] text-[#A3A3A3]">
-            Updated at {formatDate(userData?.updatedAt)} by {ROLE_TO_PERAN[userData?.role || "admin_pusat"] || "Admin Pusat"}
+            Updated at {formatDate(userData?.updatedAt)} by Admin Pusat
           </div>
         </div>
       </div>
@@ -167,11 +173,12 @@ export function DetailUserModal({ isOpen, onClose, userData }: Readonly<DetailUs
   );
 }
 
-function ReadOnlyField({ label, value }: { label: string; value: string }) {
+function ReadOnlyField({ id, label, value }: Readonly<{ id: string; label: string; value: string }>) {
   return (
     <div className="flex flex-col gap-1.5">
-      <label className="text-[12px] font-medium text-[#A3A3A3]">{label}</label>
+      <label htmlFor={id} className="text-[12px] font-medium text-[#A3A3A3]">{label}</label>
       <input
+        id={id}
         type="text"
         readOnly
         value={value}

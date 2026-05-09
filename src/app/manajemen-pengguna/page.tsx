@@ -1,23 +1,24 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
-  Download,
   ExternalLink,
-  Filter,
   Pencil,
   Plus,
   Search,
   Trash2,
-  Upload,
 } from "lucide-react";
 import { AddUserModal } from "@/components/manajemen-pengguna/AddUserModal";
-import { EditUserModal } from "@/components/manajemen-pengguna/EditUserModal";
+import { FilterPopover } from "@/components/manajemen-pengguna/FilterPopover";
+import { UpdateUserModal } from "@/components/manajemen-pengguna/UpdateUserModal";
 import { DeleteUserModal } from "@/components/manajemen-pengguna/DeleteUserModal";
 import { DetailUserModal } from "@/components/manajemen-pengguna/DetailUserModal";
+import {
+  getPeranFilterKey,
+} from "@/components/manajemen-pengguna/peran-filter-options";
 
 type StatusPengguna = "Aktif" | "Non-aktif";
 
@@ -59,12 +60,15 @@ export default function ManajemenPenggunaPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(5);
   const [pageSizeOpen, setPageSizeOpen] = useState(false);
+  const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
+  const [selectedPeranFilters, setSelectedPeranFilters] = useState<string[]>([]);
   const [isAddUserModalOpen, setIsAddUserModalOpen] = useState(false);
   const [isEditUserModalOpen, setIsEditUserModalOpen] = useState(false);
   const [isDetailUserModalOpen, setIsDetailUserModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<PenggunaRow | null>(null);
   const [isDeleteUserModalOpen, setIsDeleteUserModalOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState<PenggunaRow | null>(null);
+  const filterButtonRef = useRef<HTMLDivElement | null>(null);
 
   const handleViewUser = (user: PenggunaRow) => {
     setSelectedUser(user);
@@ -140,28 +144,28 @@ export default function ManajemenPenggunaPage() {
     setIsDeleteUserModalOpen(true);
   };
 
-  const confirmDeleteUser = () => {
-    // In real app, make API call to delete
-    console.log("Delete user", userToDelete?.id);
-    setIsDeleteUserModalOpen(false);
-  };
-
   const filteredRows = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
 
     return penggunaData.filter((row) => {
-      if (!query) return true;
+      const matchesQuery =
+        query === "" ||
+        [
+          row.namaLengkap,
+          row.email,
+          row.nomorTelepon,
+          row.peran,
+          row.wilayah,
+          row.alamatKantor,
+        ].some((value) => value.toLowerCase().includes(query));
 
-      return [
-        row.namaLengkap,
-        row.email,
-        row.nomorTelepon,
-        row.peran,
-        row.wilayah,
-        row.alamatKantor,
-      ].some((value) => value.toLowerCase().includes(query));
+      const rowPeranKey = getPeranFilterKey(row.role, row.wilayahId);
+      const matchesPeranFilter =
+        selectedPeranFilters.length === 0 || selectedPeranFilters.includes(rowPeranKey);
+
+      return matchesQuery && matchesPeranFilter;
     });
-  }, [searchQuery, penggunaData]);
+  }, [searchQuery, selectedPeranFilters, penggunaData]);
 
   const totalRows = filteredRows.length;
   const totalPages = Math.max(1, Math.ceil(totalRows / pageSize));
@@ -209,6 +213,27 @@ export default function ManajemenPenggunaPage() {
     setSelectedColumns(allColumnsSelected ? [] : columnChips.map((column) => column.key));
   };
 
+  const togglePeranFilter = (peranKey: string) => {
+    setSelectedPeranFilters((current) =>
+      current.includes(peranKey)
+        ? current.filter((key) => key !== peranKey)
+        : [...current, peranKey]
+    );
+  };
+
+  const handleResetFilter = () => {
+    setSelectedPeranFilters([]);
+    setCurrentPage(1);
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex w-full items-center justify-center rounded-xl border border-[#DCDCDC] bg-white px-6 py-16 shadow-[0_8px_24px_-22px_rgba(0,0,0,0.45)]">
+        <p className="text-[14px] text-[#707070]">Memuat data pengguna...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="flex w-full flex-col gap-4">
       <div>
@@ -244,13 +269,14 @@ export default function ManajemenPenggunaPage() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5 xl:flex-nowrap">
-          <button
-            type="button"
-            className="inline-flex items-center gap-2 rounded-lg border border-[#D7D7D7] bg-white px-3.5 py-2.5 text-[13px] font-medium text-[#444444] transition-colors hover:bg-[#FAFAFA]"
-          >
-            <Filter className="h-4 w-4" strokeWidth={2.1} />
-            Filter
-          </button>
+          <FilterPopover
+            filterButtonRef={filterButtonRef}
+            filterOpen={isFilterModalOpen}
+            setFilterOpen={setIsFilterModalOpen}
+            selectedPeranFilters={selectedPeranFilters}
+            onTogglePeran={togglePeranFilter}
+            onReset={handleResetFilter}
+          />
 
           <button
             type="button"
@@ -308,14 +334,14 @@ export default function ManajemenPenggunaPage() {
             <button
               type="button"
               onClick={() => setPageSizeOpen((prev) => !prev)}
-              className="flex items-center gap-1 min-w-[40px] rounded-[6px] border border-[#E3E3E3] bg-white px-2 py-1 shadow-sm"
+              className="flex min-w-10 items-center gap-1 rounded-md border border-[#E3E3E3] bg-white px-2 py-1 shadow-sm"
             >
               <span className="text-[13px] text-[#171717]">{pageSize}</span>
               <ChevronDown className="h-3 w-3 text-[#4C4C4C]" />
             </button>
 
             {pageSizeOpen && (
-              <div className="absolute right-0 top-full z-20 mt-1 min-w-[40px] rounded-[6px] border border-[#E3E3E3] bg-white py-1 shadow-md">
+              <div className="absolute right-0 top-full z-20 mt-1 min-w-10 rounded-md border border-[#E3E3E3] bg-white py-1 shadow-md">
                 {[5, 10, 25].map((size) => (
                   <button
                     key={size}
@@ -396,7 +422,7 @@ export default function ManajemenPenggunaPage() {
             <tbody>
               {visibleRows.map((row) => (
                 <tr key={row.id} className="border-b border-[#E5E5E5] hover:bg-[#FCFCFC]">
-                  <td className="border-r border-[#E5E5E5] px-4 py-3 text-center h-[52px]">
+                  <td className="border-r border-[#E5E5E5] px-4 py-3 text-center h-13">
                     <input
                       type="checkbox"
                       checked={selectedRows.includes(row.id)}
@@ -505,7 +531,9 @@ export default function ManajemenPenggunaPage() {
         onSuccess={fetchUsers}
       />
 
-      <EditUserModal
+      {/* Filter dropdown is handled inside `FilterPopover` component */}
+
+      <UpdateUserModal
         isOpen={isEditUserModalOpen}
         onClose={() => setIsEditUserModalOpen(false)}
         userData={selectedUser}

@@ -3,31 +3,21 @@
 import React from "react";
 import { ExternalLink, X } from "lucide-react";
 
-type PenangkaranNumberValue = string | number | null;
-
-interface PenangkaranDetailData {
+interface LembagaKonservasiDetailData {
   id: number;
-  namaPenangkaran: string;
+  namaLembaga: string;
   namaDirektur: string | null;
   nomorTelepon: string | null;
+  alamatLembaga: string | null;
   alamatKantor: string | null;
-  alamatPenangkaran: string | null;
-  koordinatLokasi: string | null;
+  koordinatLembaga: string | null;
   nomorSk: string | null;
   tanggalSk: string | null;
   akhirMasaBerlaku: string | null;
   penerbit: string | null;
-  bidangWilayah?: { namaWilayah: string } | null;
-  seksiWilayah?: { namaWilayah: string } | null;
+  bidangKsda?: { namaWilayah: string } | null;
+  seksiKonservasi?: { namaWilayah: string } | null;
   jenisTsl?: string | null;
-  tsl?: { namaDaerah?: string | null } | null;
-  statusPerlindunganNasional?: string | null;
-  statusCites?: string | null;
-  statusIucn?: string | null;
-  jantan?: PenangkaranNumberValue;
-  betina?: PenangkaranNumberValue;
-  indukanJantan?: PenangkaranNumberValue;
-  indukanBetina?: PenangkaranNumberValue;
   createdAt?: string | null;
   updatedAt?: string | null;
 }
@@ -35,7 +25,7 @@ interface PenangkaranDetailData {
 interface DetailDataModalProps {
   isOpen: boolean;
   onClose: () => void;
-  data: PenangkaranDetailData | null;
+  data: LembagaKonservasiDetailData | null;
 }
 
 const formatDate = (value?: string | null) => {
@@ -51,22 +41,7 @@ const formatDate = (value?: string | null) => {
 export function DetailDataModal({ isOpen, onClose, data }: Readonly<DetailDataModalProps>) {
   if (!isOpen || !data) return null;
 
-  const jenisTsl = data.jenisTsl || data.tsl?.namaDaerah || "-";
-  const formatReferenceValue = (value: string | null | undefined) => {
-    if (!value) return "-";
-
-    return value
-      .replaceAll("_", " ")
-      .toLowerCase()
-      .split(" ")
-      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-      .join(" ");
-  };
-  const statusPerlindunganNasional = formatReferenceValue(data.statusPerlindunganNasional);
-  const statusCites = formatReferenceValue(data.statusCites);
-  const statusIucn = formatReferenceValue(data.statusIucn);
-  const jantanValue = data.jantan ?? data.indukanJantan;
-  const betinaValue = data.betina ?? data.indukanBetina;
+  const jenisTsl = data.jenisTsl || "-";
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto p-4 pt-6 backdrop-blur-sm md:p-8 md:pt-8">
@@ -88,7 +63,7 @@ export function DetailDataModal({ isOpen, onClose, data }: Readonly<DetailDataMo
 
         <header className="text-center">
           <h2 className="text-[18px] font-medium tracking-tight text-gray-900 md:text-[20px]">
-            Detail Data Penangkar TSL
+            Detail Data Lembaga Konservasi TSL
           </h2>
         </header>
 
@@ -97,17 +72,16 @@ export function DetailDataModal({ isOpen, onClose, data }: Readonly<DetailDataMo
             <SectionHeading>Informasi Umum</SectionHeading>
             <div className="grid grid-cols-1 gap-x-8 gap-y-6 md:grid-cols-2">
               <div className="flex flex-col gap-5">
-                <ReadField id="detail-unit" label="Unit Penangkar" value={data.namaPenangkaran} />
+                <ReadField id="detail-unit" label="Unit Lembaga Konservasi" value={data.namaLembaga} />
                 <ReadField id="detail-direktur" label="Nama Direktur / Penanggung Jawab" value={data.namaDirektur} />
                 <ReadField id="detail-telepon" label="Nomor Telepon" value={data.nomorTelepon} />
-                <ReadField id="detail-alamat-penangkaran" label="Alamat Penangkaran" value={data.alamatPenangkaran} />
-                <ReadDateField id="detail-akhir-izin" label="Akhir Masa Berlaku Izin" value={data.akhirMasaBerlaku} />
+                <ReadField id="detail-alamat-lembaga" label="Alamat Lembaga Konservasi" value={data.alamatLembaga} />
               </div>
               <div className="flex flex-col gap-5">
-                <ReadField id="detail-bidang" label="Bidang KSDA" value={data.bidangWilayah?.namaWilayah} />
-                <ReadField id="detail-seksi" label="Seksi Konservasi" value={data.seksiWilayah?.namaWilayah} />
+                <ReadField id="detail-bidang" label="Bidang KSDA" value={data.bidangKsda?.namaWilayah} />
+                <ReadField id="detail-seksi" label="Seksi Konservasi" value={data.seksiKonservasi?.namaWilayah} />
                 <ReadField id="detail-alamat-kantor" label="Alamat Kantor" value={data.alamatKantor} />
-                <ReadField id="detail-koordinat" label="Koordinat Penangkaran" value={data.koordinatLokasi} />
+                <ReadField id="detail-koordinat" label="Koordinat Lembaga Konservasi" value={data.koordinatLembaga} />
               </div>
             </div>
           </div>
@@ -117,11 +91,12 @@ export function DetailDataModal({ isOpen, onClose, data }: Readonly<DetailDataMo
             <div className="grid grid-cols-1 gap-x-8 gap-y-6 md:grid-cols-2">
               <div className="flex flex-col gap-5">
                 <ReadField id="detail-nomor-sk" label="Nomor SK / Sertifikat Standar" value={data.nomorSk} />
-                <ReadDateField id="detail-tanggal-sk" label="Tanggal SK / Sertifikat Standar" value={data.tanggalSk} />
-              </div>
-              <div className="flex flex-col gap-5">
                 <ReadFileField id="detail-file-sk" label="SK / Sertifikat Standar" value={data.nomorSk ? "Tersedia" : "-"} />
                 <ReadField id="detail-penerbit" label="Penerbit" value={data.penerbit} />
+              </div>
+              <div className="flex flex-col gap-5">
+                <ReadDateField id="detail-tanggal-sk" label="Tanggal SK / Sertifikat Standar" value={data.tanggalSk} />
+                <ReadDateField id="detail-akhir-izin" label="Akhir Masa Berlaku Izin" value={data.akhirMasaBerlaku} />
               </div>
             </div>
           </div>
@@ -130,27 +105,6 @@ export function DetailDataModal({ isOpen, onClose, data }: Readonly<DetailDataMo
             <SectionHeading>Informasi TSL</SectionHeading>
             <div className="flex flex-col gap-5">
               <ReadField id="detail-jenis-tsl" label="Jenis TSL" value={jenisTsl} fullWidth />
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                <ReadField
-                  id="detail-status-perlindungan-nasional"
-                  label="Status Perlindungan Nasional"
-                  value={statusPerlindunganNasional}
-                />
-                <ReadField
-                  id="detail-status-cites"
-                  label="Status CITES"
-                  value={statusCites}
-                />
-                <ReadField
-                  id="detail-status-iucn"
-                  label="Status IUCN"
-                  value={statusIucn}
-                />
-              </div>
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <ReadField id="detail-jantan" label="Indukan Jantan" value={String(jantanValue ?? "-")} />
-                <ReadField id="detail-betina" label="Indukan Betina" value={String(betinaValue ?? "-")} />
-              </div>
             </div>
           </div>
         </div>
