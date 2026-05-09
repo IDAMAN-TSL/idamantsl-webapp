@@ -22,6 +22,14 @@ const steps = ["Informasi Umum", "Informasi Perizinan", "Informasi TSL"];
 export function AddDataModal({ isOpen, onClose }: Readonly<AddDataModalProps>) {
   const [step, setStep] = useState(0);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [formData, setFormData] = useState({
+    tanggalSk: "",
+    akhirMasaBerlaku: "",
+  });
+  const [errors] = useState<Record<string, string>>({});
+
+  const setField = (key: keyof typeof formData, value: string) =>
+    setFormData((previous) => ({ ...previous, [key]: value }));
 
   if (!isOpen) return null;
 
@@ -30,6 +38,7 @@ export function AddDataModal({ isOpen, onClose }: Readonly<AddDataModalProps>) {
   const closeAndReset = () => {
     setStep(0);
     setSelectedFile(null);
+    setFormData({ tanggalSk: "", akhirMasaBerlaku: "" });
     onClose();
   };
 
@@ -116,8 +125,22 @@ export function AddDataModal({ isOpen, onClose }: Readonly<AddDataModalProps>) {
             </div>
 
             <div className="flex flex-col gap-4">
-              <DateField label="Tanggal SK / Sertifikat Standar" />
-              <DateField label="Akhir Masa Berlaku Izin" />
+              <DateField
+                id="tanggal-sk"
+                label="Tanggal SK / Sertifikat Standar"
+                value={formData.tanggalSk}
+                onChange={(value) => setField("tanggalSk", value)}
+                required
+                error={errors.tanggalSk}
+              />
+              <DateField
+                id="akhir-masa-berlaku"
+                label="Akhir Masa Berlaku Izin"
+                value={formData.akhirMasaBerlaku}
+                onChange={(value) => setField("akhirMasaBerlaku", value)}
+                required
+                error={errors.akhirMasaBerlaku}
+              />
             </div>
 
             <input
@@ -251,18 +274,56 @@ function SelectField({
   );
 }
 
-function DateField({ label }: Readonly<{ label: string }>) {
+function DateField({
+  id,
+  label,
+  value,
+  onChange,
+  required = false,
+  error,
+}: Readonly<{
+  id: string;
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  required?: boolean;
+  error?: string;
+}>) {
+  const inputRef = React.useRef<HTMLInputElement>(null);
+
+  const openDatePicker = () => {
+    const input = inputRef.current;
+    if (!input) return;
+
+    if (typeof input.showPicker === "function") {
+      input.showPicker();
+      return;
+    }
+
+    input.focus();
+  };
+
   return (
     <div className="flex flex-col gap-1.5">
-      <label className="text-[12px] text-gray-500">{label}</label>
+      <label htmlFor={id} className="text-[12px] text-gray-500">{label} {required && <span className="text-red-600">*</span>}</label>
       <div className="relative">
         <input
+          ref={inputRef}
+          id={id}
           type="date"
-          className="h-8 w-full rounded-[3px] border border-[#C7D0AF] bg-white px-3 pr-7 text-[12px] text-gray-800 outline-none focus:ring-1 focus:ring-[#8E9E25]"
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          className={`h-8 w-full rounded-[3px] bg-white px-3 pr-7 text-[12px] text-gray-800 outline-none appearance-none focus:ring-1 focus:ring-[#8E9E25] [&::-webkit-calendar-picker-indicator]:opacity-0 ${error ? "border border-red-500" : "border border-[#C7D0AF]"}`}
         />
-        <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[#8E9E25]">
+        <button
+          type="button"
+          onClick={openDatePicker}
+          aria-label={`Pilih tanggal untuk ${label}`}
+          className="absolute right-2 top-1/2 -translate-y-1/2 text-[#8E9E25]"
+        >
           <Calendar className="h-4 w-4" strokeWidth={2} />
-        </span>
+        </button>
+        {error && <p className="mt-1 text-[11px] text-red-600">{error}</p>}
       </div>
     </div>
   );

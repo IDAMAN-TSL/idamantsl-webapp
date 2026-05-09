@@ -44,115 +44,43 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   return null;
 };
 
-const chartData = [
-  {
-    month: "Jan",
-    Penangkar: 120,
-    "Pengedar DN": 100,
-    "Pengedar LN": 90,
-    "Lembaga Konservasi": 80,
-  },
-  {
-    month: "Feb",
-    Penangkar: 150,
-    "Pengedar DN": 120,
-    "Pengedar LN": 110,
-    "Lembaga Konservasi": 100,
-  },
-  {
-    month: "Mar",
-    Penangkar: 200,
-    "Pengedar DN": 140,
-    "Pengedar LN": 130,
-    "Lembaga Konservasi": 120,
-  },
-  {
-    month: "Apr",
-    Penangkar: 270,
-    "Pengedar DN": 180,
-    "Pengedar LN": 160,
-    "Lembaga Konservasi": 150,
-  },
-  {
-    month: "Mei",
-    Penangkar: 280,
-    "Pengedar DN": 200,
-    "Pengedar LN": 180,
-    "Lembaga Konservasi": 140,
-  },
-  {
-    month: "Jun",
-    Penangkar: 200,
-    "Pengedar DN": 160,
-    "Pengedar LN": 140,
-    "Lembaga Konservasi": 130,
-  },
-  {
-    month: "Jul",
-    Penangkar: 240,
-    "Pengedar DN": 180,
-    "Pengedar LN": 170,
-    "Lembaga Konservasi": 160,
-  },
-  {
-    month: "Ags",
-    Penangkar: 210,
-    "Pengedar DN": 200,
-    "Pengedar LN": 190,
-    "Lembaga Konservasi": 170,
-  },
-  {
-    month: "Sep",
-    Penangkar: 220,
-    "Pengedar DN": 190,
-    "Pengedar LN": 200,
-    "Lembaga Konservasi": 180,
-  },
-  {
-    month: "Okt",
-    Penangkar: 190,
-    "Pengedar DN": 170,
-    "Pengedar LN": 150,
-    "Lembaga Konservasi": 140,
-  },
-  {
-    month: "Nov",
-    Penangkar: 240,
-    "Pengedar DN": 210,
-    "Pengedar LN": 190,
-    "Lembaga Konservasi": 160,
-  },
-  {
-    month: "Des",
-    Penangkar: 260,
-    "Pengedar DN": 230,
-    "Pengedar LN": 210,
-    "Lembaga Konservasi": 190,
-  },
+const INITIAL_MONTHS = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "Mei",
+  "Jun",
+  "Jul",
+  "Ags",
+  "Sep",
+  "Okt",
+  "Nov",
+  "Des",
 ];
 
-const statCards = [
+const DEFAULT_STAT_CARDS = [
   {
     title: "Penangkar",
-    value: "10",
+    value: "0",
     bgColor: "#EDE4F5",
     textColor: "#5D4D7A",
   },
   {
     title: "Pengedar Dalam Negeri",
-    value: "10",
+    value: "0",
     bgColor: "#F5E4E8",
     textColor: "#8B5A6F",
   },
   {
     title: "Pengedar Luar Negeri",
-    value: "10",
+    value: "0",
     bgColor: "#E4EEF5",
     textColor: "#5A7A8B",
   },
   {
     title: "Lembaga Konservasi",
-    value: "10",
+    value: "0",
     bgColor: "#F5EFE4",
     textColor: "#8B7A5A",
   },
@@ -161,6 +89,21 @@ const statCards = [
 export default function DashboardPage() {
   const [selectedYear] = useState(2026);
   const [user, setUser] = useState<{ nama: string; role: string } | null>(null);
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const [statCardsState, setStatCardsState] = useState(DEFAULT_STAT_CARDS);
+  const [chartDataState, setChartDataState] = useState(
+    INITIAL_MONTHS.map((m) => ({
+      month: m,
+      Penangkar: 0,
+      "Pengedar DN": 0,
+      "Pengedar LN": 0,
+      "Lembaga Konservasi": 0,
+    })),
+  );
 
   useEffect(() => {
     const userStr = localStorage.getItem("user");
@@ -171,6 +114,109 @@ export default function DashboardPage() {
         console.error("Failed to parse user data", e);
       }
     }
+  }, []);
+
+  const getToken = () =>
+    typeof window === "undefined" ? null : localStorage.getItem("token");
+
+  const fetchDashboard = async () => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const token = getToken();
+
+      // Fetch penangkaran (this endpoint exists)
+      const resPen = await fetch(`${API_URL}/api/penangkaran`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      });
+      const penResult = await resPen.json().catch(() => ({}));
+      const penData = Array.isArray(penResult.data) ? penResult.data : [];
+      const penTotal = typeof penResult.total === "number" ? penResult.total : penData.length;
+
+      // Try fetch pengedaran and lembaga endpoints if available
+      const tryFetch = async (path: string) => {
+        try {
+          const r = await fetch(`${API_URL}${path}`, {
+            headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+          });
+          if (!r.ok) return [];
+          const j = await r.json();
+          return Array.isArray(j.data) ? j.data : [];
+        } catch {
+          return [];
+        }
+      };
+
+      const [pengDnData, pengLnData, lembagaData] = await Promise.all([
+        tryFetch(`/api/pengedaran-dn`),
+        tryFetch(`/api/pengedaran-ln`),
+        tryFetch(`/api/lembaga-konservasi`),
+      ]);
+
+      const statCardsUpdated = [
+        { ...DEFAULT_STAT_CARDS[0], value: String(penTotal ?? 0) },
+        { ...DEFAULT_STAT_CARDS[1], value: String(pengDnData.length ?? 0) },
+        { ...DEFAULT_STAT_CARDS[2], value: String(pengLnData.length ?? 0) },
+        { ...DEFAULT_STAT_CARDS[3], value: String(lembagaData.length ?? 0) },
+      ];
+
+      // Build monthly chart counts using createdAt if available
+      const byMonth = INITIAL_MONTHS.map(() => ({ Penangkar: 0, PengedarDN: 0, PengedarLN: 0, Lembaga: 0 }));
+
+      const monthIndex = (dateStr: any) => {
+        try {
+          const d = new Date(dateStr);
+          if (isNaN(d.getTime())) return null;
+          return d.getMonth();
+        } catch {
+          return null;
+        }
+      };
+
+      penData.forEach((item: any) => {
+        const idx = monthIndex(item.createdAt) ?? monthIndex(item.tanggalSk);
+        if (typeof idx === "number" && idx >= 0 && idx < 12) byMonth[idx].Penangkar++;
+      });
+
+      pengDnData.forEach((item: any) => {
+        const idx = monthIndex(item.createdAt) ?? monthIndex(item.tanggalSk);
+        if (typeof idx === "number" && idx >= 0 && idx < 12) byMonth[idx].PengedarDN++;
+      });
+
+      pengLnData.forEach((item: any) => {
+        const idx = monthIndex(item.createdAt) ?? monthIndex(item.tanggalSk);
+        if (typeof idx === "number" && idx >= 0 && idx < 12) byMonth[idx].PengedarLN++;
+      });
+
+      lembagaData.forEach((item: any) => {
+        const idx = monthIndex(item.createdAt) ?? monthIndex(item.tanggalSk);
+        if (typeof idx === "number" && idx >= 0 && idx < 12) byMonth[idx].Lembaga++;
+      });
+
+      const newChart = INITIAL_MONTHS.map((m, i) => ({
+        month: m,
+        Penangkar: byMonth[i].Penangkar,
+        "Pengedar DN": byMonth[i].PengedarDN,
+        "Pengedar LN": byMonth[i].PengedarLN,
+        "Lembaga Konservasi": byMonth[i].Lembaga,
+      }));
+
+      setStatCardsState(statCardsUpdated);
+      setChartDataState(newChart);
+    } catch (err: any) {
+      console.error("Failed to fetch dashboard data", err);
+      setError("Gagal memuat data dashboard");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchDashboard();
+    const onFocus = () => fetchDashboard();
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
   }, []);
 
   const formatRole = (role: string) => {
@@ -188,10 +234,10 @@ export default function DashboardPage() {
       {/* Header Section */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-gray-900">
+          <h1 className="text-[24px] font-bold tracking-tight text-[#171717]">
             Selamat Datang, {displayRole} BBKSDA Jabar!
           </h1>
-          <p className="mt-2 text-base text-gray-600">
+          <p className="mt-1 text-[14px] text-[#8A8A8A]">
             Lihat ringkasan inti informasi data pemanfaatan tumbuhan dan satwa liar
           </p>
         </div>
@@ -199,7 +245,7 @@ export default function DashboardPage() {
 
       {/* Stats Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-4">
-        {statCards.map((card, idx) => {
+        {statCardsState.map((card, idx) => {
           return (
             <div
               key={idx}
@@ -245,7 +291,7 @@ export default function DashboardPage() {
 
         <ResponsiveContainer width="100%" height={400}>
           <LineChart
-            data={chartData}
+            data={chartDataState}
             margin={{ top: 5, right: 30, left: 0, bottom: 5 }}
           >
             <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />

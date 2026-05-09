@@ -41,12 +41,30 @@ export function AddDataModal({ isOpen, onClose, onSuccess }: Readonly<AddDataMod
     indukanJantan: "",
     indukanBetina: "",
   });
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const setField = (key: keyof typeof formData, value: string) =>
     setFormData((prev) => ({ ...prev, [key]: value }));
 
   // ─── Fetch Referensi TSL ───────────────────────────────────────────────────
-  const [referensiList, setReferensiList] = useState<{ id: number; namaDaerah: string }[]>([]);
+  const [referensiList, setReferensiList] = useState<{
+    id: number;
+    namaDaerah: string;
+    statusPerlindunganNasional?: string | null;
+    statusCites?: string | null;
+    statusIucn?: string | null;
+  }[]>([]);
+
+  const getSelectedTslStatus = (tslId: string | number | null | undefined) => {
+    const selectedId = typeof tslId === "string" ? Number(tslId) : tslId;
+    const selectedTsl = referensiList.find((item) => item.id === selectedId);
+
+    return {
+      statusPerlindunganNasional: selectedTsl?.statusPerlindunganNasional ?? null,
+      statusCites: selectedTsl?.statusCites ?? null,
+      statusIucn: selectedTsl?.statusIucn ?? null,
+    };
+  };
   useEffect(() => {
     const token = globalThis.window === undefined ? null : localStorage.getItem("token");
     const url = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
@@ -60,8 +78,41 @@ export function AddDataModal({ isOpen, onClose, onSuccess }: Readonly<AddDataMod
 
   if (!isOpen) return null;
 
-  const goNext = () => setStep((previous) => Math.min(previous + 1, steps.length - 1));
   const goPrevious = () => setStep((previous) => Math.max(previous - 1, 0));
+  const validateStep = (s: number) => {
+    const e: Record<string, string> = {};
+    const isEmpty = (v?: string) => !v || v.trim() === "";
+    if (s === 0) {
+      if (isEmpty(formData.namaPenangkaran)) e.namaPenangkaran = "Field ini wajib diisi";
+      if (isEmpty(formData.namaDirektur)) e.namaDirektur = "Field ini wajib diisi";
+      if (isEmpty(formData.nomorTelepon)) e.nomorTelepon = "Field ini wajib diisi";
+      else if (!/^08\d+$/.test(formData.nomorTelepon)) e.nomorTelepon = "Nomor telepon harus numerik dan diawali 08";
+      if (isEmpty(formData.alamatPenangkaran)) e.alamatPenangkaran = "Field ini wajib diisi";
+      if (isEmpty(formData.bidangWilayahId)) e.bidangWilayahId = "Pilih bidang KSDA";
+      if (isEmpty(formData.seksiWilayahId)) e.seksiWilayahId = "Pilih seksi konservasi";
+      if (isEmpty(formData.alamatKantor)) e.alamatKantor = "Field ini wajib diisi";
+      if (isEmpty(formData.koordinatLokasi)) e.koordinatLokasi = "Field ini wajib diisi";
+    }
+    if (s === 1) {
+      if (isEmpty(formData.nomorSk)) e.nomorSk = "Field ini wajib diisi";
+      if (!selectedFile && isEmpty(formData.nomorSk)) e.file = "Unggah file SK atau isi nomor SK";
+      if (isEmpty(formData.penerbit)) e.penerbit = "Field ini wajib diisi";
+      if (isEmpty(formData.tanggalSk)) e.tanggalSk = "Pilih tanggal SK";
+      if (isEmpty(formData.akhirMasaBerlaku)) e.akhirMasaBerlaku = "Pilih akhir masa berlaku";
+    }
+    if (s === 2) {
+      if (isEmpty(formData.tslId)) e.tslId = "Pilih jenis TSL";
+      if (isEmpty(formData.indukanJantan)) e.indukanJantan = "Field ini wajib diisi";
+      if (isEmpty(formData.indukanBetina)) e.indukanBetina = "Field ini wajib diisi";
+    }
+    return e;
+  };
+
+  const goNextValidated = () => {
+    const e = validateStep(step);
+    setErrors(e);
+    if (Object.keys(e).length === 0) setStep((previous) => Math.min(previous + 1, steps.length - 1));
+  };
   const closeAndReset = () => {
     setStep(0);
     setSelectedFile(null);
@@ -78,6 +129,19 @@ export function AddDataModal({ isOpen, onClose, onSuccess }: Readonly<AddDataMod
   const handleSubmit = async () => {
     try {
       setIsLoading(true);
+      // full client-side validation before submit (all fields required)
+      const e: Record<string, string> = {};
+      const isEmpty = (v?: string) => !v || v.trim() === "";
+      Object.keys(formData).forEach((k) => {
+        const key = k as keyof typeof formData;
+        if (isEmpty(formData[key])) e[key] = "Field ini wajib diisi";
+      });
+      if (!/^08\d+$/.test(formData.nomorTelepon)) e.nomorTelepon = "Nomor telepon harus numerik dan diawali 08";
+      if (Object.keys(e).length > 0) {
+        setErrors(e);
+        setIsLoading(false);
+        return;
+      }
       const token = globalThis.window === undefined ? null : localStorage.getItem("token");
       const url = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
 
@@ -102,8 +166,9 @@ export function AddDataModal({ isOpen, onClose, onSuccess }: Readonly<AddDataMod
         bidangWilayahId: formData.bidangWilayahId ? Number(formData.bidangWilayahId) : null,
         seksiWilayahId: formData.seksiWilayahId ? Number(formData.seksiWilayahId) : null,
         tslId: formData.tslId ? Number(formData.tslId) : null,
-        indukanJantan: parseNullableNumber(formData.indukanJantan),
-        indukanBetina: parseNullableNumber(formData.indukanBetina),
+        ...getSelectedTslStatus(formData.tslId),
+        jantan: parseNullableNumber(formData.indukanJantan),
+        betina: parseNullableNumber(formData.indukanBetina),
       };
 
       const res = await fetch(`${url}/api/penangkaran`, {
@@ -115,6 +180,9 @@ export function AddDataModal({ isOpen, onClose, onSuccess }: Readonly<AddDataMod
       if (result.success) {
         if (onSuccess) onSuccess();
         closeAndReset();
+      } else if (result.errors && typeof result.errors === "object") {
+        // show server-side validation if provided
+        setErrors(result.errors);
       } else {
         alert(result.message || "Gagal menambah data");
       }
@@ -167,22 +235,22 @@ export function AddDataModal({ isOpen, onClose, onSuccess }: Readonly<AddDataMod
         {step === 0 && (
           <div className="mt-5 grid grid-cols-1 gap-x-6 gap-y-4 md:grid-cols-2">
             <div className="flex flex-col gap-4">
-              <Field label="Unit Penangkar" value={formData.namaPenangkaran} onChange={(v) => setField("namaPenangkaran", v)} />
-              <Field label="Nama Direktur / Penanggung Jawab" value={formData.namaDirektur} onChange={(v) => setField("namaDirektur", v)} />
-              <Field label="Nomor Telepon" value={formData.nomorTelepon} onChange={(v) => setField("nomorTelepon", v)} />
-              <Field label="Alamat Penangkaran" withLocationIcon value={formData.alamatPenangkaran} onChange={(v) => setField("alamatPenangkaran", v)} />
+              <Field label="Unit Penangkar" value={formData.namaPenangkaran} onChange={(v) => setField("namaPenangkaran", v)} required error={errors.namaPenangkaran} />
+              <Field label="Nama Direktur / Penanggung Jawab" value={formData.namaDirektur} onChange={(v) => setField("namaDirektur", v)} required error={errors.namaDirektur} />
+              <Field label="Nomor Telepon" value={formData.nomorTelepon} onChange={(v) => setField("nomorTelepon", v.replaceAll(/\D/g, ""))} required error={errors.nomorTelepon} />
+              <Field label="Alamat Penangkaran" withLocationIcon value={formData.alamatPenangkaran} onChange={(v) => setField("alamatPenangkaran", v)} required error={errors.alamatPenangkaran} />
             </div>
 
             <div className="flex flex-col gap-4">
               <SelectField label="Bidang KSDA" options={[
                 { label: "I. Bogor", value: "1" }, { label: "II. Soreang", value: "2" }, { label: "III. Ciamis", value: "3" }
-              ]} value={formData.bidangWilayahId} onChange={(v) => setField("bidangWilayahId", v)} />
+              ]} value={formData.bidangWilayahId} onChange={(v) => setField("bidangWilayahId", v)} required error={errors.bidangWilayahId} />
               <SelectField label="Seksi Konservasi" options={[
                 { label: "I. Serang", value: "4" }, { label: "II. Bogor", value: "5" }, { label: "III. Soreang", value: "6" },
                 { label: "IV. Purwakarta", value: "7" }, { label: "V. Garut", value: "8" }, { label: "VI. Tasikmalaya", value: "9" },
-              ]} value={formData.seksiWilayahId} onChange={(v) => setField("seksiWilayahId", v)} />
-              <Field label="Alamat Kantor" withLocationIcon value={formData.alamatKantor} onChange={(v) => setField("alamatKantor", v)} />
-              <Field label="Koordinat Penangkaran" withLocationIcon value={formData.koordinatLokasi} onChange={(v) => setField("koordinatLokasi", v)} />
+              ]} value={formData.seksiWilayahId} onChange={(v) => setField("seksiWilayahId", v)} required error={errors.seksiWilayahId} />
+              <Field label="Alamat Kantor" withLocationIcon value={formData.alamatKantor} onChange={(v) => setField("alamatKantor", v)} required error={errors.alamatKantor} />
+              <Field label="Koordinat Penangkaran" withLocationIcon value={formData.koordinatLokasi} onChange={(v) => setField("koordinatLokasi", v)} required error={errors.koordinatLokasi} />
             </div>
           </div>
         )}
@@ -190,18 +258,20 @@ export function AddDataModal({ isOpen, onClose, onSuccess }: Readonly<AddDataMod
         {step === 1 && (
           <div className="mt-5 grid grid-cols-1 gap-x-6 gap-y-4 md:grid-cols-2">
             <div className="flex flex-col gap-4">
-              <Field label="Nomor SK / Sertifikat Standar" value={formData.nomorSk} onChange={(v) => setField("nomorSk", v)} />
+              <Field label="Nomor SK / Sertifikat Standar" value={formData.nomorSk} onChange={(v) => setField("nomorSk", v)} required error={errors.nomorSk} />
               <FilePicker
                 label="SK / Sertifikat Standar"
                 fileName={selectedFile?.name}
                 onPick={() => document.getElementById("add-data-upload-input")?.click()}
+                required
+                error={errors.file}
               />
-              <Field label="Penerbit" value={formData.penerbit} onChange={(v) => setField("penerbit", v)} />
+              <Field label="Penerbit" value={formData.penerbit} onChange={(v) => setField("penerbit", v)} required error={errors.penerbit} />
             </div>
 
             <div className="flex flex-col gap-4">
-              <DateField label="Tanggal SK / Sertifikat Standar" value={formData.tanggalSk} onChange={(v) => setField("tanggalSk", v)} />
-              <DateField label="Akhir Masa Berlaku Izin" value={formData.akhirMasaBerlaku} onChange={(v) => setField("akhirMasaBerlaku", v)} />
+              <DateField id="tanggal-sk" label="Tanggal SK / Sertifikat Standar" value={formData.tanggalSk} onChange={(v) => setField("tanggalSk", v)} required error={errors.tanggalSk} />
+              <DateField id="akhir-masa-berlaku" label="Akhir Masa Berlaku Izin" value={formData.akhirMasaBerlaku} onChange={(v) => setField("akhirMasaBerlaku", v)} required error={errors.akhirMasaBerlaku} />
             </div>
 
             <input
@@ -222,11 +292,13 @@ export function AddDataModal({ isOpen, onClose, onSuccess }: Readonly<AddDataMod
                 options={referensiList}
                 value={formData.tslId}
                 onChange={(v) => setField("tslId", v)}
+                required
+                error={errors.tslId}
               />
             </div>
 
-            <Field label="Indukan Jantan" value={formData.indukanJantan} onChange={(v) => setField("indukanJantan", v)} />
-            <Field label="Indukan Betina" value={formData.indukanBetina} onChange={(v) => setField("indukanBetina", v)} />
+            <Field label="Indukan Jantan" value={formData.indukanJantan} onChange={(v) => setField("indukanJantan", v)} required error={errors.indukanJantan} />
+            <Field label="Indukan Betina" value={formData.indukanBetina} onChange={(v) => setField("indukanBetina", v)} required error={errors.indukanBetina} />
           </div>
         )}
 
@@ -250,7 +322,7 @@ export function AddDataModal({ isOpen, onClose, onSuccess }: Readonly<AddDataMod
             {step < steps.length - 1 ? (
               <button
                 type="button"
-                onClick={goNext}
+                onClick={goNextValidated}
                 className="inline-flex items-center gap-2 rounded-md border border-[#D4DB8B] bg-[#F6F7E6] px-4 py-2 text-[12px] font-medium text-[#8E9E25] transition-colors hover:bg-[#eef1d1]"
               >
                 Lanjut
@@ -279,26 +351,31 @@ type FieldProps = Readonly<{
   withLocationIcon?: boolean;
   value: string;
   onChange: (v: string) => void;
+  required?: boolean;
+  error?: string;
 }>;
 
-function Field({ label, withLocationIcon = false, value, onChange }: FieldProps) {
+function Field({ label, withLocationIcon = false, value, onChange, required = false, error }: FieldProps) {
   return (
     <div className="flex flex-col gap-1.5">
-      <label className="text-[12px] text-gray-500">{label}</label>
+      <label className="text-[12px] text-gray-500">
+        {label} {required && <span className="text-red-600">*</span>}
+      </label>
       <div className="relative">
         <input
           type="text"
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className={`h-8 w-full rounded-[3px] border border-[#C7D0AF] bg-white px-3 text-[12px] text-gray-800 outline-none focus:ring-1 focus:ring-[#8E9E25] ${
+          className={`h-8 w-full rounded-[3px] bg-white px-3 text-[12px] text-gray-800 outline-none focus:ring-1 focus:ring-[#8E9E25] ${
             withLocationIcon ? "pl-7" : ""
-          }`}
+          } ${error ? "border border-red-500" : "border border-[#C7D0AF]"}`}
         />
         {withLocationIcon && (
           <span className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-[#8E9E25]">
             <MapPin className="h-3.5 w-3.5" strokeWidth={2.2} />
           </span>
         )}
+      {error && <p className="mt-1 text-[11px] text-red-600">{error}</p>}
       </div>
     </div>
   );
@@ -310,23 +387,27 @@ function SelectField({
   fullWidth = false,
   value,
   onChange,
+  required = false,
+  error,
 }: Readonly<{
   label: string;
   options: { label: string; value: string }[];
   fullWidth?: boolean;
   value: string;
   onChange: (v: string) => void;
+  required?: boolean;
+  error?: string;
 }>) {
   return (
     <div className="flex flex-col gap-1.5">
-      <label className="text-[12px] text-gray-500">{label}</label>
+      <label className="text-[12px] text-gray-500">{label} {required && <span className="text-red-600">*</span>}</label>
       <div className="relative">
         <select
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className={`h-8 w-full appearance-none rounded-[3px] border border-[#C7D0AF] bg-white px-3 text-[12px] text-gray-800 outline-none focus:ring-1 focus:ring-[#8E9E25] ${
+          className={`h-8 w-full appearance-none rounded-[3px] bg-white px-3 text-[12px] text-gray-800 outline-none focus:ring-1 focus:ring-[#8E9E25] ${
             fullWidth ? "" : "pr-7"
-          }`}
+          } ${error ? "border border-red-500" : "border border-[#C7D0AF]"}`}
         >
           <option value=""></option>
           {options.map((option) => (
@@ -338,25 +419,62 @@ function SelectField({
         <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[#8E9E25]">
           <ChevronDown className="h-4 w-4" strokeWidth={2} />
         </span>
+        {error && <p className="mt-1 text-[11px] text-red-600">{error}</p>}
       </div>
     </div>
   );
 }
 
-function DateField({ label, value, onChange }: Readonly<{ label: string; value: string; onChange: (v: string) => void }>) {
+function DateField({
+  id,
+  label,
+  value,
+  onChange,
+  required = false,
+  error,
+}: Readonly<{
+  id: string;
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  required?: boolean;
+  error?: string;
+}>) {
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const openDatePicker = () => {
+    const input = inputRef.current;
+    if (!input) return;
+
+    if (typeof input.showPicker === "function") {
+      input.showPicker();
+      return;
+    }
+
+    input.focus();
+  };
+
   return (
     <div className="flex flex-col gap-1.5">
-      <label className="text-[12px] text-gray-500">{label}</label>
+      <label htmlFor={id} className="text-[12px] text-gray-500">{label} {required && <span className="text-red-600">*</span>}</label>
       <div className="relative">
         <input
+          ref={inputRef}
+          id={id}
           type="date"
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="h-8 w-full rounded-[3px] border border-[#C7D0AF] bg-white px-3 pr-7 text-[12px] text-gray-800 outline-none focus:ring-1 focus:ring-[#8E9E25]"
+          className={`h-8 w-full rounded-[3px] bg-white px-3 pr-7 text-[12px] text-gray-800 outline-none appearance-none focus:ring-1 focus:ring-[#8E9E25] [&::-webkit-calendar-picker-indicator]:opacity-0 ${error ? "border border-red-500" : "border border-[#C7D0AF]"}`}
         />
-        <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[#8E9E25]">
+        <button
+          type="button"
+          onClick={openDatePicker}
+          aria-label={`Pilih tanggal untuk ${label}`}
+          className="absolute right-2 top-1/2 -translate-y-1/2 text-[#8E9E25]"
+        >
           <Calendar className="h-4 w-4" strokeWidth={2} />
-        </span>
+        </button>
+        {error && <p className="mt-1 text-[11px] text-red-600">{error}</p>}
       </div>
     </div>
   );
@@ -366,14 +484,18 @@ function FilePicker({
   label,
   fileName,
   onPick,
+  required = false,
+  error,
 }: Readonly<{
   label: string;
   fileName?: string;
   onPick: () => void;
+  required?: boolean;
+  error?: string;
 }>) {
   return (
     <div className="flex flex-col gap-1.5">
-      <label className="text-[12px] text-gray-500">{label}</label>
+      <label className="text-[12px] text-gray-500">{label} {required && <span className="text-red-600">*</span>}</label>
       <div className="flex h-8 overflow-hidden rounded-[3px] border border-[#C7D0AF] bg-white">
         <button
           type="button"
@@ -388,6 +510,7 @@ function FilePicker({
         </div>
       </div>
       <p className="text-[10px] text-gray-400">Pastikan file bertipe .pdf</p>
+      {error && <p className="mt-1 text-[11px] text-red-600">{error}</p>}
     </div>
   );
 }
@@ -397,11 +520,15 @@ function TslSearchField({
   options,
   value,
   onChange,
+  required = false,
+  error,
 }: Readonly<{
   label: string;
   options: { id: number; namaDaerah: string }[];
   value: string;
   onChange: (v: string) => void;
+  required?: boolean;
+  error?: string;
 }>) {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
@@ -432,7 +559,7 @@ function TslSearchField({
 
   return (
     <div className="flex flex-col gap-1.5" ref={ref}>
-      <label className="text-[12px] text-gray-500">{label}</label>
+      <label className="text-[12px] text-gray-500">{label} {required && <span className="text-red-600">*</span>}</label>
       <div className="relative">
         <input
           type="text"
@@ -453,7 +580,7 @@ function TslSearchField({
         </span>
 
         {open && (
-          <div className="absolute left-0 top-full z-50 mt-1 max-h-48 w-full overflow-y-auto rounded-[4px] border border-[#C7D0AF] bg-white shadow-lg">
+          <div className="absolute left-0 top-full z-50 mt-1 max-h-48 w-full overflow-y-auto rounded-sm border border-[#C7D0AF] bg-white shadow-lg">
             {filtered.length === 0 ? (
               <div className="px-3 py-2 text-[12px] text-gray-400">Tidak ada data</div>
             ) : (
@@ -472,6 +599,7 @@ function TslSearchField({
             )}
           </div>
         )}
+        {error && <p className="mt-1 text-[11px] text-red-600">{error}</p>}
       </div>
     </div>
   );

@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { ChevronDown, Save, Trash2, X } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { AlertCircle, ChevronDown, Pencil, X } from "lucide-react";
 
 interface ReferensiTSL {
   id: number;
@@ -17,6 +17,8 @@ interface ReferensiTSL {
   statusPerlindunganNasional?: string | null;
   statusCites?: string | null;
   statusIucn?: string | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
 }
 
 interface UpdateDataModalProps {
@@ -26,7 +28,7 @@ interface UpdateDataModalProps {
   onSuccess?: () => void;
 }
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
 
 const IUCN_OPTIONS = [
   { label: "EX (Extinct/Punah)", value: "punah" },
@@ -56,12 +58,26 @@ const PERLINDUNGAN_OPTIONS = [
   { label: "Tidak Dilindungi", value: "tidak_dilindungi" },
 ];
 
-export function UpdateDataModal({
-  isOpen,
-  onClose,
-  data,
-  onSuccess,
-}: Readonly<UpdateDataModalProps>) {
+const getUpdateErrorMessage = async (res: Response) => {
+  if (res.status === 401) return "Sesi Anda telah berakhir. Silakan login kembali.";
+  if (res.status === 403) return "Anda tidak memiliki izin untuk mengubah data.";
+  if (res.status === 404) return "Data tidak ditemukan. Mungkin telah dihapus.";
+  if (res.status === 409) return "Data dengan nama daerah ini sudah ada.";
+
+  const err = await res.json().catch(() => null);
+  return err?.message ?? `Gagal memperbarui data (${res.status})`;
+};
+
+const formatFooterDate = (value?: string | null) => {
+  if (!value) return "dd mm yyyy";
+  return new Date(value).toLocaleDateString("id-ID", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+};
+
+export function UpdateDataModal({ isOpen, onClose, data, onSuccess }: Readonly<UpdateDataModalProps>) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
@@ -81,22 +97,23 @@ export function UpdateDataModal({
   });
 
   useEffect(() => {
-    if (data) {
-      setForm({
-        namaDaerah: data.namaDaerah ?? "",
-        jenis: data.jenis ?? "",
-        kingdom: data.kingdom ?? "",
-        divisi: data.divisi ?? "",
-        kelas: data.kelas ?? "",
-        ordo: data.ordo ?? "",
-        famili: data.famili ?? "",
-        genus: data.genus ?? "",
-        spesies: data.spesies ?? "",
-        statusPerlindunganNasional: data.statusPerlindunganNasional ?? "",
-        statusCites: data.statusCites ?? "",
-        statusIucn: data.statusIucn ?? "",
-      });
-    }
+    if (!data) return;
+
+    setErrorMsg(null);
+    setForm({
+      namaDaerah: data.namaDaerah ?? "",
+      jenis: data.jenis ?? "",
+      kingdom: data.kingdom ?? "",
+      divisi: data.divisi ?? "",
+      kelas: data.kelas ?? "",
+      ordo: data.ordo ?? "",
+      famili: data.famili ?? "",
+      genus: data.genus ?? "",
+      spesies: data.spesies ?? "",
+      statusPerlindunganNasional: data.statusPerlindunganNasional ?? "",
+      statusCites: data.statusCites ?? "",
+      statusIucn: data.statusIucn ?? "",
+    });
   }, [data]);
 
   if (!isOpen || !data) return null;
@@ -110,10 +127,12 @@ export function UpdateDataModal({
       setErrorMsg("Nama Daerah dan Jenis TSL wajib diisi.");
       return;
     }
+
     setIsSubmitting(true);
     setErrorMsg(null);
+
     try {
-      const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+      const token = globalThis.window === undefined ? null : localStorage.getItem("token");
       const res = await fetch(`${API_BASE}/api/referensi-tsl/${data.id}`, {
         method: "PUT",
         headers: {
@@ -122,14 +141,17 @@ export function UpdateDataModal({
         },
         body: JSON.stringify(form),
       });
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.message ?? "Gagal memperbarui data");
-      }
+
+      if (!res.ok) throw new Error(await getUpdateErrorMessage(res));
+
       onSuccess?.();
       onClose();
     } catch (err: unknown) {
-      setErrorMsg(err instanceof Error ? err.message : "Terjadi kesalahan.");
+      if (err instanceof TypeError) {
+        setErrorMsg("Gagal terhubung ke server. Periksa koneksi internet Anda.");
+        return;
+      }
+      setErrorMsg(err instanceof Error ? err.message : "Terjadi kesalahan yang tidak diketahui.");
     } finally {
       setIsSubmitting(false);
     }
@@ -139,6 +161,7 @@ export function UpdateDataModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/40 p-4 backdrop-blur-sm md:p-8">
       <div className="relative w-full max-w-4xl rounded-[14px] bg-white px-6 py-6 shadow-[0_24px_80px_-20px_rgba(0,0,0,0.35)] md:px-8 md:py-7">
         <button
+          type="button"
           onClick={onClose}
           className="absolute right-4 top-4 inline-flex h-8 w-8 items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700"
           aria-label="Tutup modal"
@@ -152,56 +175,76 @@ export function UpdateDataModal({
           </h2>
         </div>
 
-        <div className="mt-5 grid grid-cols-1 gap-x-6 gap-y-4 md:grid-cols-2">
-          <div className="flex flex-col gap-4">
-            <InputField label="Nama Daerah" value={form.namaDaerah} onChange={(v) => handleChange("namaDaerah", v)} required />
-            <SelectFieldOpt label="Jenis TSL" options={JENIS_OPTIONS} value={form.jenis} onChange={(v) => handleChange("jenis", v)} required />
-            <InputField label="Kingdom" value={form.kingdom} onChange={(v) => handleChange("kingdom", v)} />
-            <InputField label="Divisi" value={form.divisi} onChange={(v) => handleChange("divisi", v)} />
-            <InputField label="Kelas" value={form.kelas} onChange={(v) => handleChange("kelas", v)} />
-            <InputField label="Ordo" value={form.ordo} onChange={(v) => handleChange("ordo", v)} />
-          </div>
+        <div className="mt-5 space-y-8">
+          <section className="space-y-5">
+            <SectionHeading>Informasi Umum</SectionHeading>
+            <div className="grid grid-cols-1 gap-x-6 gap-y-4 md:grid-cols-2">
+              <div className="flex flex-col gap-4">
+                <InputField label="Nama Daerah" value={form.namaDaerah} onChange={(v) => handleChange("namaDaerah", v)} required />
+                <InputField label="Kingdom" value={form.kingdom} onChange={(v) => handleChange("kingdom", v)} />
+                <InputField label="Divisi" value={form.divisi} onChange={(v) => handleChange("divisi", v)} />
+                <InputField label="Kelas" value={form.kelas} onChange={(v) => handleChange("kelas", v)} />
+              </div>
 
-          <div className="flex flex-col gap-4">
-            <InputField label="Family" value={form.famili} onChange={(v) => handleChange("famili", v)} />
-            <InputField label="Genus" value={form.genus} onChange={(v) => handleChange("genus", v)} />
-            <InputField label="Spesies" value={form.spesies} onChange={(v) => handleChange("spesies", v)} />
-            <SelectFieldOpt label="Status Perlindungan Nasional" options={PERLINDUNGAN_OPTIONS} value={form.statusPerlindunganNasional} onChange={(v) => handleChange("statusPerlindunganNasional", v)} />
-            <SelectFieldOpt label="Status CITES" options={CITES_OPTIONS} value={form.statusCites} onChange={(v) => handleChange("statusCites", v)} />
-            <SelectFieldOpt label="Status IUCN" options={IUCN_OPTIONS} value={form.statusIucn} onChange={(v) => handleChange("statusIucn", v)} />
-          </div>
+              <div className="flex flex-col gap-4">
+                <SelectFieldOpt label="Jenis TSL" options={JENIS_OPTIONS} value={form.jenis} onChange={(v) => handleChange("jenis", v)} required />
+                <InputField label="Ordo" value={form.ordo} onChange={(v) => handleChange("ordo", v)} />
+                <InputField label="Family" value={form.famili} onChange={(v) => handleChange("famili", v)} />
+                <InputField label="Genus" value={form.genus} onChange={(v) => handleChange("genus", v)} />
+                <InputField label="Spesies" value={form.spesies} onChange={(v) => handleChange("spesies", v)} />
+              </div>
+            </div>
+          </section>
+
+          <section className="space-y-5">
+            <SectionHeading>Informasi Status</SectionHeading>
+            <div className="grid grid-cols-1 gap-x-6 gap-y-4 md:grid-cols-2">
+              <div className="flex flex-col gap-4">
+                <SelectFieldOpt label="Status Perlindungan Nasional" options={PERLINDUNGAN_OPTIONS} value={form.statusPerlindunganNasional} onChange={(v) => handleChange("statusPerlindunganNasional", v)} />
+                <SelectFieldOpt label="Status CITES" options={CITES_OPTIONS} value={form.statusCites} onChange={(v) => handleChange("statusCites", v)} />
+              </div>
+              <div className="flex flex-col gap-4">
+                <SelectFieldOpt label="Status IUCN" options={IUCN_OPTIONS} value={form.statusIucn} onChange={(v) => handleChange("statusIucn", v)} />
+              </div>
+            </div>
+          </section>
         </div>
 
         {errorMsg && (
-          <p className="mt-3 text-[12px] text-red-600">{errorMsg}</p>
+          <div className="mt-4 flex gap-3 rounded-lg border border-red-200 bg-red-50 p-3">
+            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-red-600" strokeWidth={2} />
+            <div className="flex-1">
+              <p className="text-[12px] font-medium text-red-700">{errorMsg}</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setErrorMsg(null)}
+              className="shrink-0 text-red-400 hover:text-red-600"
+              aria-label="Tutup pesan error"
+            >
+              <X className="h-4 w-4" strokeWidth={2} />
+            </button>
+          </div>
         )}
 
-        <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <button
-            type="button"
-            onClick={onClose}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-[14px] font-semibold text-red-600 shadow-sm transition-colors hover:bg-red-100 sm:w-auto"
-          >
-            <Trash2 className="h-4 w-4" strokeWidth={2.5} />
-            Hapus
-          </button>
+        <div className="mt-6 grid gap-4 sm:grid-cols-[1fr_auto] sm:items-start">
+          <div className="grid gap-1 text-[11px] text-gray-400">
+            <span>Created at {formatFooterDate(data.createdAt)} by Admin Pusat</span>
+          </div>
 
-          <div className="flex flex-wrap items-center justify-end gap-3">
+          <div className="flex flex-col items-end gap-3">
+            <div className="grid gap-1 text-[11px] text-gray-400">
+              Updated at {formatFooterDate(data.updatedAt)} by Admin Pusat
+            </div>
+
             <button
               type="button"
-              onClick={onClose}
-              className="inline-flex items-center justify-center rounded-xl border border-gray-300 bg-white px-4 py-2 text-[14px] font-semibold text-gray-700 shadow-sm transition-colors hover:bg-gray-50"
-            >
-              Batal
-            </button>
-            <button
-              type="button"
-              disabled={isSubmitting}
               onClick={handleSubmit}
-              className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#8E9E25] px-4 py-2 text-[14px] font-semibold text-white shadow-sm transition-colors hover:bg-[#7e8d20] disabled:opacity-60"
+              disabled={isSubmitting}
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-amber-500 px-4 py-2 text-[14px] font-semibold text-white shadow-[0_4px_14px_rgba(245,158,11,0.35)] transition-all hover:bg-amber-600 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              <Save className="h-4 w-4" strokeWidth={2.4} />
-              {isSubmitting ? "Menyimpan..." : "Simpan"}
+              <Pencil className="h-4 w-4" strokeWidth={2.4} />
+              {isSubmitting ? "Memperbarui..." : "Perbarui"}
             </button>
           </div>
         </div>
@@ -219,7 +262,8 @@ function InputField({
   return (
     <div className="flex flex-col gap-1.5">
       <label className="text-[12px] text-gray-500">
-        {label}{required && <span className="ml-0.5 text-red-500">*</span>}
+        {label}
+        {required && <span className="ml-0.5 text-red-500">*</span>}
       </label>
       <input
         type="text"
@@ -229,6 +273,10 @@ function InputField({
       />
     </div>
   );
+}
+
+function SectionHeading({ children }: Readonly<{ children: React.ReactNode }>) {
+  return <div className="text-[14px] font-semibold text-[#9aa51f]">{children}</div>;
 }
 
 function SelectFieldOpt({
@@ -247,7 +295,8 @@ function SelectFieldOpt({
   return (
     <div className="flex flex-col gap-1.5">
       <label className="text-[12px] text-gray-500">
-        {label}{required && <span className="ml-0.5 text-red-500">*</span>}
+        {label}
+        {required && <span className="ml-0.5 text-red-500">*</span>}
       </label>
       <div className="relative">
         <select

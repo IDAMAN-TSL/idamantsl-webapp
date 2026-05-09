@@ -1,14 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type Dispatch, type SetStateAction } from "react";
 import {
   Check,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
-  Download,
   ExternalLink,
-  Filter,
   Search,
   X,
 } from "lucide-react";
@@ -16,6 +14,7 @@ import { VerifikasiAcceptModal } from "@/components/verifikasi/VerifikasiAcceptM
 import { VerifikasiRejectModal } from "@/components/verifikasi/VerifikasiRejectModal";
 import { VerifikasiRejectReasonModal } from "@/components/verifikasi/VerifikasiRejectReasonModal";
 import { VerifikasiDetailModal } from "@/components/verifikasi/VerifikasiDetailModal";
+import FilterPopover from "@/components/verifikasi/FilterPopover";
 import { ViewDataModal } from "@/components/referensi-tsl/ViewDataModal";
 import { DetailDataModal as PenangkaranDetailModal } from "@/components/penangkaran/DetailDataModal";
 
@@ -77,6 +76,33 @@ const columnChips = [
   { key: "peran", label: "Peran", tableHeader: "Peran" },
 ] as const;
 
+const jenisFilterOptions = ["Tambah", "Perbarui", "Hapus"] as const;
+const dataFilterOptions = [
+  "Penangkar",
+  "Pengedar DN",
+  "Pengedar LN",
+  "Lembaga Konservasi",
+  "Referensi TSL",
+] as const;
+const bidangFilterOptions = ["I. Bogor", "II. Soreang", "III. Ciamis"] as const;
+const statusFilterOptions = ["Menunggu", "Disetujui", "Ditolak"] as const;
+
+const normalizeText = (value: string) => value.toLowerCase().replace(/\s+/g, " ").trim();
+
+const getDataFilterLabel = (row: VerifikasiRow) => {
+  if (row.tabelTarget === "referensi_tsl") return "Referensi TSL";
+  if (row.tabelTarget === "penangkaran") return "Penangkar";
+  return row.dataPengajuan;
+};
+
+const getBidangFilterLabel = (peran: string) => {
+  const normalizedPeran = normalizeText(peran);
+  if (normalizedPeran.includes("bogor")) return "I. Bogor";
+  if (normalizedPeran.includes("soreang")) return "II. Soreang";
+  if (normalizedPeran.includes("ciamis")) return "III. Ciamis";
+  return "";
+};
+
 export default function VerifikasiPage() {
   const [rows, setRows] = useState<VerifikasiRow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -84,7 +110,6 @@ export default function VerifikasiPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(5);
   const [pageSizeOpen, setPageSizeOpen] = useState(false);
-  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [selectedRowId, setSelectedRowId] = useState<string | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [isDetailLoading, setIsDetailLoading] = useState(false);
@@ -96,6 +121,8 @@ export default function VerifikasiPage() {
   const [isRejectReasonModalOpen, setIsRejectReasonModalOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
   const [selectedRows, setSelectedRows] = useState<string[]>([]);
+  const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
+  const filterButtonRef = useRef<HTMLDivElement | null>(null);
 
   const [selectedColumns, setSelectedColumns] = useState<string[]>([
     "tanggalPengajuan",
@@ -103,16 +130,45 @@ export default function VerifikasiPage() {
     "dataPengajuan",
     "peran",
   ]);
-  const [selectedStatuses, setSelectedStatuses] = useState<VerifikasiStatus[]>([
-    "Menunggu",
-    "Disetujui",
-    "Ditolak",
-  ]);
+  const [selectedJenisFilters, setSelectedJenisFilters] = useState<string[]>([]);
+  const [selectedDataFilters, setSelectedDataFilters] = useState<string[]>([]);
+  const [selectedBidangFilters, setSelectedBidangFilters] = useState<string[]>([]);
+  const [selectedStatuses, setSelectedStatuses] = useState<VerifikasiStatus[]>([]);
   const [userRole, setUserRole] = useState<string>("");
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+  useEffect(() => {
+    setSelectedJenisFilters([]);
+    setSelectedDataFilters([]);
+    setSelectedBidangFilters([]);
+    setSelectedStatuses([]);
+  }, []);
+
+  const API_URL = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001").trim();
   const getToken = () =>
     globalThis.window === undefined ? null : localStorage.getItem("token");
+
+  const getAuthHeaders = (): Record<string, string> => {
+    const token = getToken();
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  };
+
+  const fetchJson = async (path: string) => {
+    try {
+      const response = await fetch(new URL(path, API_URL).toString(), {
+        headers: getAuthHeaders(),
+      });
+
+      if (!response.ok) {
+        console.error(`API Response Error ${path}:`, response.status);
+        return null;
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error(`Gagal fetch ${path}:`, error);
+      return null;
+    }
+  };
 
   const fetchVerifikasi = async () => {
     try {
@@ -140,7 +196,7 @@ export default function VerifikasiPage() {
             const nomor = parsedUser.wilayah?.nomorWilayah || "";
             const nama = parsedUser.wilayah?.namaWilayah;
             currentUserPeran = `${tipe} ${nomor} ${nama}`
-              .replace(/\s+/g, " ")
+              .replaceAll(/\s+/g, " ")
               .trim();
           } else {
             currentUserPeran =
@@ -150,7 +206,9 @@ export default function VerifikasiPage() {
                   ? "Seksi"
                   : parsedUser.role;
           }
-        } catch (_) {}
+        } catch (_) {
+          // Jika parsing gagal, gunakan nilai default
+        }
       }
 
       const isNonAdmin =
@@ -161,25 +219,23 @@ export default function VerifikasiPage() {
         // ==================================================================
         // ADMIN_PUSAT: Ambil dari /api/verifikasi/* (data lengkap semua user)
         // ==================================================================
-        const [resPending, resApproved, resUsers, resLog] = await Promise.all([
-          fetch(`${API_URL}/api/verifikasi/pending`, {
-            headers: { Authorization: `Bearer ${getToken()}` },
-          }),
-          fetch(`${API_URL}/api/verifikasi/approved`, {
-            headers: { Authorization: `Bearer ${getToken()}` },
-          }),
-          fetch(`${API_URL}/api/users`, {
-            headers: { Authorization: `Bearer ${getToken()}` },
-          }),
-          fetch(`${API_URL}/api/verifikasi/log`, {
-            headers: { Authorization: `Bearer ${getToken()}` },
-          }),
-        ]);
+        try {
+          const [resultPendingResult, resultApprovedResult, resultUsersResult, resultLogResult] =
+            await Promise.allSettled([
+              fetchJson("/api/verifikasi/pending"),
+              fetchJson("/api/verifikasi/approved"),
+              fetchJson("/api/users"),
+              fetchJson("/api/verifikasi/log"),
+            ]);
 
-        const resultPending = await resPending.json();
-        const resultApproved = await resApproved.json();
-        const resultUsers = await resUsers.json();
-        const resultLog = await resLog.json();
+          const resultPending =
+            resultPendingResult.status === "fulfilled" ? resultPendingResult.value : null;
+          const resultApproved =
+            resultApprovedResult.status === "fulfilled" ? resultApprovedResult.value : null;
+          const resultUsers =
+            resultUsersResult.status === "fulfilled" ? resultUsersResult.value : null;
+          const resultLog =
+            resultLogResult.status === "fulfilled" ? resultLogResult.value : null;
 
         const usersList =
           resultUsers?.success === true
@@ -212,7 +268,7 @@ export default function VerifikasiPage() {
         const newRows: VerifikasiRow[] = [];
         const processedIds = new Set<string>();
 
-        if (resultPending.data) {
+        if (resultPending?.data) {
           const addItems = (items: any[]) => {
             items.forEach((item) => {
               const rowId = `${item.tabelTarget}-${item.id}`;
@@ -245,7 +301,7 @@ export default function VerifikasiPage() {
           addItems(resultPending.data.penangkaran || []);
         }
 
-        if (resultApproved.data) {
+        if (resultApproved?.data) {
           const addItems = (items: any[]) => {
             items.forEach((item) => {
               const rowId = `${item.tabelTarget}-${item.id}`;
@@ -307,6 +363,10 @@ export default function VerifikasiPage() {
         });
 
         setRows(newRows);
+        } catch (error) {
+          console.error("Gagal memuat data admin verifikasi:", error);
+          setRows([]);
+        }
       } else {
         // ==================================================================
         // NON-ADMIN: Ambil dari modul sumber, filter hanya data milik user ini
@@ -318,17 +378,16 @@ export default function VerifikasiPage() {
           return;
         }
 
-        const [resReferensi, resPenangkaran] = await Promise.all([
-          fetch(`${API_URL}/api/referensi-tsl`, {
-            headers: { Authorization: `Bearer ${getToken()}` },
-          }),
-          fetch(`${API_URL}/api/penangkaran`, {
-            headers: { Authorization: `Bearer ${getToken()}` },
-          }),
-        ]);
+        try {
+          const [resultReferensiResult, resultPenangkaranResult] = await Promise.allSettled([
+            fetchJson("/api/referensi-tsl"),
+            fetchJson("/api/penangkaran"),
+          ]);
 
-        const resultReferensi = await resReferensi.json();
-        const resultPenangkaran = await resPenangkaran.json();
+          const resultReferensi =
+            resultReferensiResult.status === "fulfilled" ? resultReferensiResult.value : null;
+          const resultPenangkaran =
+            resultPenangkaranResult.status === "fulfilled" ? resultPenangkaranResult.value : null;
 
         const newRows: VerifikasiRow[] = [];
 
@@ -438,9 +497,14 @@ export default function VerifikasiPage() {
         });
 
         setRows(newRows);
+        } catch (error) {
+          console.error("Gagal memuat data non-admin verifikasi:", error);
+          setRows([]);
+        }
       }
     } catch (error) {
       console.error("Gagal memuat data verifikasi:", error);
+      setRows([]);
     } finally {
       setIsLoading(false);
     }
@@ -460,17 +524,23 @@ export default function VerifikasiPage() {
         const res = await fetch(endpoint, {
           headers: { Authorization: `Bearer ${getToken()}` },
         });
-        const result = await res.json();
 
-        if (result.success !== false && result.data) {
-          // Merge with pending changes if any so we can see the proposed changes
-          const mergedData = {
-            ...result.data,
-            ...(row.rawData?.pendingChanges || {}),
-          };
-          setFullDetailData(mergedData);
-        } else {
+        if (!res.ok) {
+          console.error("Failed to fetch detail:", res.status);
           setFullDetailData(row.rawData);
+        } else {
+          const result = await res.json();
+
+          if (result.success !== false && result.data) {
+            // Merge with pending changes if any so we can see the proposed changes
+            const mergedData = {
+              ...result.data,
+              ...(row.rawData?.pendingChanges ?? {}),
+            };
+            setFullDetailData(mergedData);
+          } else {
+            setFullDetailData(row.rawData);
+          }
         }
       } else {
         setFullDetailData(row.rawData);
@@ -498,6 +568,7 @@ export default function VerifikasiPage() {
 
   const filteredRows = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
+
     return rows.filter((row) => {
       const matchSearch =
         !query ||
@@ -509,11 +580,33 @@ export default function VerifikasiPage() {
           row.status,
         ].some((value) => value.toLowerCase().includes(query));
 
-      const matchStatus = selectedStatuses.includes(row.status);
+      const matchJenis =
+        selectedJenisFilters.length === 0 ||
+        selectedJenisFilters.includes(row.jenisPengajuan);
 
-      return matchSearch && matchStatus;
+      const matchData =
+        selectedDataFilters.length === 0 ||
+        selectedDataFilters.includes(getDataFilterLabel(row));
+
+      const bidangLabel = getBidangFilterLabel(row.peran);
+      const matchBidang =
+        selectedBidangFilters.length === 0 ||
+        !bidangLabel ||
+        selectedBidangFilters.includes(bidangLabel);
+
+      const matchStatus =
+        selectedStatuses.length === 0 || selectedStatuses.includes(row.status);
+
+      return matchSearch && matchJenis && matchData && matchBidang && matchStatus;
     });
-  }, [rows, searchQuery, selectedStatuses]);
+  }, [
+    rows,
+    searchQuery,
+    selectedBidangFilters,
+    selectedDataFilters,
+    selectedJenisFilters,
+    selectedStatuses,
+  ]);
 
   const totalRows = filteredRows.length;
   const totalPages = Math.max(1, Math.ceil(totalRows / pageSize));
@@ -566,12 +659,51 @@ export default function VerifikasiPage() {
     }
   };
 
+  const toggleFilterValue = (
+    setter: Dispatch<SetStateAction<string[]>>,
+    value: string,
+  ) => {
+    setter((current) =>
+      current.includes(value)
+        ? current.filter((item) => item !== value)
+        : [...current, value],
+    );
+  };
+
+  const toggleJenisFilter = (value: string) => {
+    toggleFilterValue(setSelectedJenisFilters, value);
+  };
+
+  const toggleDataFilter = (value: string) => {
+    toggleFilterValue(setSelectedDataFilters, value);
+  };
+
+  const toggleBidangFilter = (value: string) => {
+    toggleFilterValue(setSelectedBidangFilters, value);
+  };
+
   const toggleStatusChip = (status: VerifikasiStatus) => {
     setSelectedStatuses((current) =>
       current.includes(status)
         ? current.filter((s) => s !== status)
         : [...current, status],
     );
+  };
+
+  const toggleStatusFilter = (value: string) => {
+    setSelectedStatuses((current) =>
+      current.includes(value as VerifikasiStatus)
+        ? current.filter((status) => status !== value)
+        : [...current, value as VerifikasiStatus],
+    );
+  };
+
+  const handleResetFilters = () => {
+    setSelectedJenisFilters([]);
+    setSelectedDataFilters([]);
+    setSelectedBidangFilters([]);
+    setSelectedStatuses([]);
+    setCurrentPage(1);
   };
 
   const getStatusStyle = (status: VerifikasiStatus) => {
@@ -638,14 +770,23 @@ export default function VerifikasiPage() {
             placeholder="Cari nama pengguna, email, wilayah ..."
           />
         </div>
-        <button
-          type="button"
-          className="inline-flex items-center gap-2 rounded-lg border border-[#D7D7D7] bg-white px-3.5 py-2.5 text-[13px] font-medium text-[#444444] transition-colors hover:bg-[#FAFAFA]"
-        >
-          <Filter className="h-4 w-4" strokeWidth={2.1} />
-          Filter
-        </button>
+        <FilterPopover
+          filterButtonRef={filterButtonRef}
+          filterOpen={isFilterModalOpen}
+          setFilterOpen={setIsFilterModalOpen}
+          selectedJenisFilters={selectedJenisFilters}
+          selectedDataFilters={selectedDataFilters}
+          selectedBidangFilters={selectedBidangFilters}
+          selectedStatusFilters={selectedStatuses}
+          onToggleJenis={toggleJenisFilter}
+          onToggleData={toggleDataFilter}
+          onToggleBidang={toggleBidangFilter}
+          onToggleStatus={toggleStatusFilter}
+          onReset={handleResetFilters}
+        />
       </div>
+
+      {/* Filter dropdown is handled inside `FilterPopover` component */}
 
       <div className="px-4 py-3">
         <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
@@ -693,59 +834,7 @@ export default function VerifikasiPage() {
             </label>
           </div>
 
-          <div className="space-y-2.5 border-l border-[#E5E5E5] pl-6 hidden xl:block">
-            <p className="text-[14px] font-medium text-[#2F2F2F]">
-              Pilih status yang ditampilkan
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {(["Menunggu", "Disetujui", "Ditolak"] as VerifikasiStatus[]).map(
-                (status) => {
-                  const isActive = selectedStatuses.includes(status);
-                  return (
-                    <button
-                      key={status}
-                      type="button"
-                      onClick={() => toggleStatusChip(status)}
-                      className={`rounded-full border px-3 py-1 text-[11px] transition-colors ${
-                        isActive
-                          ? "border-[#A5C05E] bg-[#F3F7E9] text-[#4C4C4C] font-medium"
-                          : "border-[#D8D8D8] bg-white text-[#7A7A7A] hover:bg-[#FAFAFA]"
-                      }`}
-                    >
-                      {status}
-                    </button>
-                  );
-                },
-              )}
-            </div>
-          </div>
-
-          <div className="space-y-2.5 xl:hidden pt-4 border-t border-[#E5E5E5]">
-            <p className="text-[14px] font-medium text-[#2F2F2F]">
-              Pilih status yang ditampilkan
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {(["Menunggu", "Disetujui", "Ditolak"] as VerifikasiStatus[]).map(
-                (status) => {
-                  const isActive = selectedStatuses.includes(status);
-                  return (
-                    <button
-                      key={status}
-                      type="button"
-                      onClick={() => toggleStatusChip(status)}
-                      className={`rounded-full border px-3 py-1 text-[11px] transition-colors ${
-                        isActive
-                          ? "border-[#A5C05E] bg-[#F3F7E9] text-[#4C4C4C] font-medium"
-                          : "border-[#D8D8D8] bg-white text-[#7A7A7A] hover:bg-[#FAFAFA]"
-                      }`}
-                    >
-                      {status}
-                    </button>
-                  );
-                },
-              )}
-            </div>
-          </div>
+          
 
           {/* Right: Unduh + pageSize — vertically centered to whole card */}
           <div className="flex shrink-0 items-center gap-2">

@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef } from "react";
 import {
   Search,
-  Filter,
   Plus,
   Upload,
   Download,
@@ -13,12 +12,36 @@ import {
   Pencil,
   Trash2,
   ExternalLink,
-  X,
 } from "lucide-react";
+import FilterPopover from "../../components/pengedaran-luar/FilterPopover";
 import { AddDataModal } from "../../components/pengedaran-luar/AddDataModal";
 import { UpdateDataModal } from "../../components/pengedaran-luar/UpdateDataModal";
+import { DetailDataModal } from "../../components/pengedaran-luar/DetailDataModal";
 import { UploadDocModal } from "../../components/ui/UploadDocModal";
 import { ExportPreviewModal } from "../../components/penangkaran/ExportPreviewModal";
+
+interface PengedaranLuarDetailData {
+  id: number;
+  namaPengedaran: string;
+  namaDirektur: string | null;
+  nomorTelepon: string | null;
+  alamatKantor: string | null;
+  alamatPengedaran: string | null;
+  koordinatLokasi: string | null;
+  nomorSk: string | null;
+  tanggalSk: string | null;
+  akhirMasaBerlaku: string | null;
+  penerbit: string | null;
+  bidangWilayah?: { namaWilayah: string } | null;
+  seksiWilayah?: { namaWilayah: string } | null;
+  jenisTsl?: string | null;
+  tsl?: { namaDaerah?: string | null } | null;
+  statusPerlindunganNasional?: string | null;
+  statusCites?: string | null;
+  statusIucn?: string | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+}
 
 const FILTER_TAGS = [
   "Unit Pengedar",
@@ -44,12 +67,38 @@ const rows = Array.from({ length: 5 }, (_, index) => ({
   status: "Disetujui",
 }));
 
+type PengedaranHeaderCell =
+  | { type: "single"; label: string }
+  | { type: "group"; label: string; columns: string[] };
+
+const TABLE_HEADER_SEQUENCE: PengedaranHeaderCell[] = [
+  { type: "single", label: "Unit Pengedar" },
+  { type: "group", label: "Surat Izin", columns: ["No SK", "File SK", "Tgl SK", "Masa Berlaku SK"] },
+  { type: "single", label: "Penerbit" },
+  { type: "single", label: "Direktor/PJ" },
+  { type: "single", label: "No Telp" },
+  { type: "single", label: "Bidang" },
+  { type: "single", label: "Seksi" },
+  { type: "single", label: "Alamat Kantor" },
+  { type: "group", label: "Lokasi Pengedar", columns: ["Alamat Unit", "Koordinat Unit"] },
+  { type: "single", label: "Jenis TSL" },
+  { type: "group", label: "Indukan", columns: ["Jantan", "Betina"] },
+];
+
 export default function PengedaranLuarPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [selectedDetailData, setSelectedDetailData] = useState<PengedaranLuarDetailData | null>(null);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
-  const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [filterState, setFilterState] = useState({
+    bidang: [] as string[],
+    seksi: [] as string[],
+    status: [] as string[],
+  });
+  const filterButtonRef = useRef<HTMLDivElement>(null);
   const [selectedFilters, setSelectedFilters] = useState<string[]>([
     "Unit Pengedar",
     "Seksi",
@@ -84,6 +133,19 @@ export default function PengedaranLuarPage() {
         ? previous.filter((value) => value !== tag)
         : [...previous, tag]
     );
+  };
+
+  const toggleRowFilter = (group: keyof typeof filterState, value: string) => {
+    setFilterState((prev) => ({
+      ...prev,
+      [group]: prev[group].includes(value)
+        ? prev[group].filter((v) => v !== value)
+        : [...prev[group], value],
+    }));
+  };
+
+  const clearRowFilters = () => {
+    setFilterState({ bidang: [], seksi: [], status: [] });
   };
 
   const allColumnsCheckboxRef = useRef<HTMLInputElement>(null);
@@ -146,6 +208,40 @@ export default function PengedaranLuarPage() {
     "Jantan": () => "0",
     "Betina": () => "0",
   };
+  const columnMap = new Map(Object.entries(columnConfig));
+  const visibleHeaderSequence = TABLE_HEADER_SEQUENCE
+    .map((cell) => {
+      if (cell.type === "single") {
+        return selectedFilters.includes(cell.label) ? cell : null;
+      }
+
+      const columns = cell.columns.filter((columnLabel) => selectedFilters.includes(columnLabel));
+      return columns.length > 0 ? { ...cell, columns } : null;
+    })
+    .filter(Boolean) as Array<PengedaranHeaderCell>;
+  const visibleGroupColumns = visibleHeaderSequence.filter(
+    (cell): cell is Extract<PengedaranHeaderCell, { type: "group" }> => cell.type === "group"
+  );
+
+  const buildDetailData = (row: any): PengedaranLuarDetailData => ({
+    id: row.id,
+    namaPengedaran: row.namaUnit || "-",
+    namaDirektur: row.namaDirektur || null,
+    nomorTelepon: row.nomorTelepon || null,
+    alamatKantor: row.alamatKantor || null,
+    alamatPengedaran: row.alamatUnit || null,
+    koordinatLokasi: row.koordinat || null,
+    nomorSk: row.nomorSk || null,
+    tanggalSk: row.tanggalSk || null,
+    akhirMasaBerlaku: row.masaBerlaku || null,
+    penerbit: row.penerbit || null,
+    jenisTsl: row.jenisTsl || null,
+    statusPerlindunganNasional: row.statusPerlindunganNasional || null,
+    statusCites: row.statusCites || null,
+    statusIucn: row.statusIucn || null,
+    createdAt: row.createdAt || null,
+    updatedAt: row.updatedAt || null,
+  });
 
   return (
     <div className="flex w-full flex-col gap-4">
@@ -177,13 +273,14 @@ export default function PengedaranLuarPage() {
         </div>
 
         <div className="flex flex-wrap items-center gap-3 xl:flex-nowrap xl:justify-end">
-          <button
-            onClick={() => setIsFilterModalOpen(true)}
-            className="inline-flex items-center gap-2 rounded-lg border border-[#D7D7D7] bg-white px-3.5 py-2.5 text-[13px] font-medium text-[#444444] transition-colors hover:bg-[#FAFAFA]"
-          >
-            <Filter className="h-4 w-4" strokeWidth={2.1} />
-            Filter
-          </button>
+          <FilterPopover
+            filterButtonRef={filterButtonRef}
+            filterOpen={filterOpen}
+            setFilterOpen={setFilterOpen}
+            filterState={filterState}
+            toggleRowFilter={toggleRowFilter}
+            clearRowFilters={clearRowFilters}
+          />
           {userRole !== "seksi_wilayah" && (
             <>
               <button
@@ -205,41 +302,6 @@ export default function PengedaranLuarPage() {
         </div>
       </div>
 
-      {isFilterModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/40 p-4 pt-24 backdrop-blur-sm">
-          <div className="relative w-full max-w-md rounded-2xl bg-white p-5 shadow-[0_24px_80px_-20px_rgba(0,0,0,0.35)]">
-            <button
-              onClick={() => setIsFilterModalOpen(false)}
-              className="absolute right-4 top-4 inline-flex h-8 w-8 items-center justify-center rounded-full text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700"
-              aria-label="Tutup filter"
-            >
-              <X className="h-4 w-4" />
-            </button>
-
-            <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
-              <FilterGroup
-                title="Bidang KSDA"
-                items={["I. Bogor", "II. Soreang", "III. Ciamis"]}
-              />
-              <FilterGroup
-                title="Seksi Konservasi"
-                items={[
-                  "I. Serang",
-                  "II. Bogor",
-                  "III. Soreang",
-                  "IV. Purwakarta",
-                  "V. Garut",
-                  "VI. Tasikmalaya",
-                ]}
-              />
-              <FilterGroup
-                title="Status"
-                items={["Disetujui", "Menunggu", "Ditolak"]}
-              />
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Column selector + controls */}
       <div className="px-4 py-3">
@@ -347,72 +409,29 @@ export default function PengedaranLuarPage() {
                     aria-label="Pilih semua baris"
                   />
                 </th>
-                <th
-                  rowSpan={2}
-                  className="border border-gray-200 px-3 py-2 text-center font-bold text-gray-800 min-w-[130px]"
-                >
-                  Nama Unit<br />Pengedar
-                </th>
-                <th
-                  colSpan={3}
-                  className="border border-gray-200 px-3 py-2 text-center font-bold text-gray-800"
-                >
-                  Surat Izin
-                </th>
-                <th
-                  rowSpan={2}
-                  className="border border-gray-200 px-3 py-2 text-center font-bold text-gray-800 min-w-[80px]"
-                >
-                  Penerbit
-                </th>
-                <th
-                  rowSpan={2}
-                  className="border border-gray-200 px-3 py-2 text-center font-bold text-gray-800 min-w-[130px]"
-                >
-                  Nama Direktur/<br />Penanggung Jawab
-                </th>
-                <th
-                  rowSpan={2}
-                  className="border border-gray-200 px-3 py-2 text-center font-bold text-gray-800 min-w-[110px]"
-                >
-                  Nomor Telepon/<br />Faximile
-                </th>
-                <th
-                  rowSpan={2}
-                  className="border border-gray-200 px-3 py-2 text-center font-bold text-gray-800 min-w-[110px]"
-                >
-                  Bidang KSDA<br />Wilayah
-                </th>
-                <th
-                  rowSpan={2}
-                  className="border border-gray-200 px-3 py-2 text-center font-bold text-gray-800 min-w-[110px]"
-                >
-                  Seksi Konservasi<br />Wilayah
-                </th>
-                <th
-                  rowSpan={2}
-                  className="border border-gray-200 px-3 py-2 text-center font-bold text-gray-800 min-w-[100px]"
-                >
-                  Lokasi Kantor
-                </th>
-                <th
-                  colSpan={2}
-                  className="border border-gray-200 px-3 py-2 text-center font-bold text-gray-800"
-                >
-                  Lokasi Pengedar
-                </th>
-                <th
-                  rowSpan={2}
-                  className="border border-gray-200 px-3 py-2 text-center font-bold text-gray-800 min-w-[90px]"
-                >
-                  Jenis TSL
-                </th>
-                <th
-                  colSpan={3}
-                  className="border border-gray-200 px-3 py-2 text-center font-bold text-gray-800"
-                >
-                  Status
-                </th>
+                {visibleHeaderSequence.map((cell) => {
+                  if (cell.type === "single") {
+                    return (
+                      <th
+                        key={cell.label}
+                        rowSpan={2}
+                        className="border border-gray-200 px-3 py-2 text-center font-bold text-gray-800"
+                      >
+                        {cell.label}
+                      </th>
+                    );
+                  }
+
+                  return (
+                    <th
+                      key={cell.label}
+                      colSpan={cell.columns.length}
+                      className="border border-gray-200 px-3 py-2 text-center font-bold text-gray-800"
+                    >
+                      {cell.label}
+                    </th>
+                  );
+                })}
                 <th
                   rowSpan={2}
                   className="border border-gray-200 px-3 py-2 text-center font-bold text-gray-800 w-16"
@@ -421,30 +440,16 @@ export default function PengedaranLuarPage() {
                 </th>
               </tr>
               <tr className="bg-gray-50 border-b border-gray-200">
-                <th className="border border-gray-200 px-2 py-1.5 text-center font-semibold text-gray-700 min-w-[110px]">
-                  No. SK
-                </th>
-                <th className="border border-gray-200 px-2 py-1.5 text-center font-semibold text-gray-700 min-w-[110px]">
-                  Tanggal SK
-                </th>
-                <th className="border border-gray-200 px-2 py-1.5 text-center font-semibold text-gray-700 min-w-[100px]">
-                  Akhir masa<br />berlaku izin
-                </th>
-                <th className="border border-gray-200 px-2 py-1.5 text-center font-semibold text-gray-700 min-w-[120px]">
-                  Alamat
-                </th>
-                <th className="border border-gray-200 px-2 py-1.5 text-center font-semibold text-gray-700 min-w-[110px]">
-                  Koordinat
-                </th>
-                <th className="border border-gray-200 px-2 py-1.5 text-center font-semibold text-gray-700 min-w-[90px]">
-                  Perlindungan<br />Nasional
-                </th>
-                <th className="border border-gray-200 px-2 py-1.5 text-center font-semibold text-gray-700 min-w-[80px]">
-                  dalam<br />CITES
-                </th>
-                <th className="border border-gray-200 px-2 py-1.5 text-center font-semibold text-gray-700 min-w-[80px]">
-                  IUCN
-                </th>
+                {visibleGroupColumns.flatMap((cell) =>
+                  cell.columns.map((columnLabel) => (
+                    <th
+                      key={`${cell.label}-${columnLabel}`}
+                      className="border border-gray-200 px-2 py-1.5 text-center font-semibold text-gray-700"
+                    >
+                      {columnLabel}
+                    </th>
+                  ))
+                )}
               </tr>
             </thead>
 
@@ -462,25 +467,32 @@ export default function PengedaranLuarPage() {
                         aria-label={`Pilih baris ${row.id}`}
                       />
                     </td>
-                  <td className="border border-gray-100 px-2 py-3 text-gray-500" />
-                  <td className="border border-gray-100 px-2 py-3 text-gray-500" />
-                  <td className="border border-gray-100 px-2 py-3 text-gray-500" />
-                  <td className="border border-gray-100 px-2 py-3 text-gray-500" />
-                  <td className="border border-gray-100 px-2 py-3 text-gray-500" />
-                  <td className="border border-gray-100 px-2 py-3 text-gray-500" />
-                  <td className="border border-gray-100 px-2 py-3 text-gray-500" />
-                  <td className="border border-gray-100 px-2 py-3 text-gray-500" />
-                  <td className="border border-gray-100 px-2 py-3 text-gray-500" />
-                  <td className="border border-gray-100 px-2 py-3 text-gray-500" />
-                  <td className="border border-gray-100 px-2 py-3 text-gray-500" />
-                  <td className="border border-gray-100 px-2 py-3 text-gray-500" />
-                  <td className="border border-gray-100 px-2 py-3 text-center" />
-                  <td className="border border-gray-100 px-2 py-3 text-center" />
-                  <td className="border border-gray-100 px-2 py-3 text-center" />
-                  <td className="border border-gray-100 px-2 py-3 text-center" />
+                    {visibleHeaderSequence.map((cell) => {
+                      if (cell.type === "single") {
+                        const accessor = columnMap.get(cell.label);
+                        return (
+                          <td key={cell.label} className="border border-gray-100 px-2 py-3 text-gray-500">
+                            {accessor ? accessor(row) : "-"}
+                          </td>
+                        );
+                      }
+
+                      return cell.columns.map((columnLabel) => {
+                        const accessor = columnMap.get(columnLabel);
+                        return (
+                          <td key={`${cell.label}-${columnLabel}`} className="border border-gray-100 px-2 py-3 text-gray-500">
+                            {accessor ? accessor(row) : "-"}
+                          </td>
+                        );
+                      });
+                    })}
                   <td className="border border-gray-100 px-2 py-3 text-center">
                     <div className="flex items-center justify-center gap-2">
                       <button
+                        onClick={() => {
+                          setSelectedDetailData(buildDetailData(row));
+                          setIsDetailModalOpen(true);
+                        }}
                         className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#9B8CF2] bg-[#DCD6FF] text-[#5E50C7] shadow-sm transition-colors hover:bg-[#cec4ff]"
                         title="Lihat"
                       >
@@ -489,7 +501,10 @@ export default function PengedaranLuarPage() {
                       {userRole !== "seksi_wilayah" && (
                         <>
                           <button
-                            onClick={() => setIsUpdateModalOpen(true)}
+                            onClick={() => {
+                              setSelectedDetailData(buildDetailData(row));
+                              setIsUpdateModalOpen(true);
+                            }}
                             className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#F2D79A] bg-[#FDF1CC] text-[#C99A2F] shadow-sm transition-colors hover:bg-[#f9e4a2]"
                             title="Edit"
                           >
@@ -540,13 +555,25 @@ export default function PengedaranLuarPage() {
       </div>
 
       <AddDataModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
-      <UploadDocModal
-        isOpen={isUploadModalOpen}
-        onClose={() => setIsUploadModalOpen(false)}
+      <DetailDataModal
+        isOpen={isDetailModalOpen}
+        onClose={() => {
+          setIsDetailModalOpen(false);
+          setSelectedDetailData(null);
+        }}
+        data={selectedDetailData}
       />
       <UpdateDataModal
         isOpen={isUpdateModalOpen}
-        onClose={() => setIsUpdateModalOpen(false)}
+        onClose={() => {
+          setIsUpdateModalOpen(false);
+          setSelectedDetailData(null);
+        }}
+        data={selectedDetailData}
+      />
+      <UploadDocModal
+        isOpen={isUploadModalOpen}
+        onClose={() => setIsUploadModalOpen(false)}
       />
 
       <ExportPreviewModal
@@ -561,21 +588,3 @@ export default function PengedaranLuarPage() {
   );
 }
 
-function FilterGroup({ title, items }: Readonly<{ title: string; items: string[] }>) {
-  return (
-    <div>
-      <h3 className="mb-2 text-sm font-bold text-gray-900">{title}</h3>
-      <div className="flex flex-col gap-2">
-        {items.map((item) => (
-          <label key={item} className="flex items-center gap-2 text-sm text-gray-700">
-            <input
-              type="checkbox"
-              className="h-4 w-4 rounded border-gray-300 accent-[#8E9E25] focus:ring-[#8E9E25]"
-            />
-            <span>{item}</span>
-          </label>
-        ))}
-      </div>
-    </div>
-  );
-}

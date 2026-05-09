@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef } from "react";
 import {
   Search,
-  Filter,
   Plus,
   Upload,
   Download,
@@ -13,9 +12,10 @@ import {
   Pencil,
   Trash2,
   ExternalLink,
-  X,
 } from "lucide-react";
 import { AddDataModal } from "../../components/lembaga-konservasi/AddDataModal";
+import { DetailDataModal } from "../../components/lembaga-konservasi/DetailDataModal";
+import FilterPopover from "../../components/lembaga-konservasi/FilterPopover";
 import { UpdateDataModal } from "../../components/lembaga-konservasi/UpdateDataModal";
 import { UploadDocModal } from "../../components/ui/UploadDocModal";
 import { ExportPreviewModal } from "../../components/penangkaran/ExportPreviewModal";
@@ -39,17 +39,42 @@ const FILTER_TAGS = [
   "Koordinat",
 ];
 
-const rows = Array.from({ length: 5 }, (_, index) => ({
+const bidangOptions = ["I. Bogor", "II. Soreang", "III. Ciamis"];
+const seksiOptions = [
+  "I. Serang",
+  "II. Bogor",
+  "III. Soreang",
+  "IV. Purwakarta",
+  "V. Garut",
+  "VI. Tasikmalaya",
+];
+const statusOptions = ["Disetujui", "Menunggu", "Ditolak"];
+
+const rows = Array.from({ length: 12 }, (_, index) => ({
   id: index + 1,
-  status: "Aktif",
+  status: statusOptions[index % statusOptions.length],
+  bidang: bidangOptions[index % bidangOptions.length],
+  seksi: seksiOptions[index % seksiOptions.length],
 }));
+
+type RowFilterState = {
+  bidang: string[];
+  seksi: string[];
+  status: string[];
+};
 
 export default function LembagaKonservasiPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
-  const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [rowFilterState, setRowFilterState] = useState<RowFilterState>({
+    bidang: [],
+    seksi: [],
+    status: [],
+  });
   const [selectedFilters, setSelectedFilters] = useState<string[]>([
     "Unit Lembaga",
     "Seksi",
@@ -60,11 +85,20 @@ export default function LembagaKonservasiPage() {
   const [pageSizeOpen, setPageSizeOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedRows, setSelectedRows] = useState<number[]>([]);
+  const [selectedDetailData, setSelectedDetailData] = useState<LembagaKonservasiDetailData | null>(null);
+  const filterButtonRef = useRef<HTMLDivElement | null>(null);
 
-  const totalRows = rows.length;
+  const filteredRows = rows.filter((row) => {
+    const bidangMatch = rowFilterState.bidang.length === 0 || rowFilterState.bidang.includes(row.bidang);
+    const seksiMatch = rowFilterState.seksi.length === 0 || rowFilterState.seksi.includes(row.seksi);
+    const statusMatch = rowFilterState.status.length === 0 || rowFilterState.status.includes(row.status);
+    return bidangMatch && seksiMatch && statusMatch;
+  });
+
+  const totalRows = filteredRows.length;
   const startRow = totalRows === 0 ? 0 : (currentPage - 1) * pageSize + 1;
   const endRow = Math.min(currentPage * pageSize, totalRows);
-  const visibleRows = rows.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  const visibleRows = filteredRows.slice((currentPage - 1) * pageSize, currentPage * pageSize);
   const [userRole, setUserRole] = useState<string>("");
 
   useEffect(() => {
@@ -73,7 +107,9 @@ export default function LembagaKonservasiPage() {
       try {
         const parsed = JSON.parse(userStr);
         setUserRole(parsed.role || "");
-      } catch (e) {}
+      } catch {
+        setUserRole("");
+      }
     }
   }, []);
 
@@ -90,8 +126,24 @@ export default function LembagaKonservasiPage() {
   const allColumnsSelected = selectedFilters.length === FILTER_TAGS.length;
   const someColumnsSelected = selectedFilters.length > 0 && !allColumnsSelected;
 
-  const allFilteredSelected = rows.length > 0 && selectedRows.length === rows.length;
+  const selectedFilteredCount = filteredRows.filter((row) => selectedRows.includes(row.id)).length;
+  const allFilteredSelected = filteredRows.length > 0 && selectedFilteredCount === filteredRows.length;
   const someFilteredSelected = selectedRows.length > 0 && !allFilteredSelected;
+
+  const toggleRowFilter = (group: keyof RowFilterState, value: string) => {
+    setRowFilterState((previous) => ({
+      ...previous,
+      [group]: previous[group].includes(value)
+        ? previous[group].filter((entry) => entry !== value)
+        : [...previous[group], value],
+    }));
+    setCurrentPage(1);
+  };
+
+  const clearRowFilters = () => {
+    setRowFilterState({ bidang: [], seksi: [], status: [] });
+    setCurrentPage(1);
+  };
 
   const toggleAllColumns = () => {
     if (allColumnsSelected) {
@@ -111,7 +163,7 @@ export default function LembagaKonservasiPage() {
     if (allFilteredSelected) {
       setSelectedRows([]);
     } else {
-      setSelectedRows(rows.map((r) => r.id));
+      setSelectedRows(filteredRows.map((r) => r.id));
     }
   };
 
@@ -146,6 +198,25 @@ export default function LembagaKonservasiPage() {
     "Koordinat": (row) => row.koordinat || "-",
   };
 
+  const buildDetailData = (row: (typeof rows)[number]): LembagaKonservasiDetailData => ({
+    id: row.id,
+    namaLembaga: `Unit Lembaga ${row.id}`,
+    namaDirektur: `Direktur ${row.id}`,
+    nomorTelepon: `0812345678${row.id}`,
+    alamatLembaga: `Alamat Lembaga ${row.id}`,
+    alamatKantor: `Alamat Kantor ${row.id}`,
+    koordinatLembaga: `-6.2${row.id}, 106.8${row.id}`,
+    nomorSk: `SK-00${row.id}/TSL/2026`,
+    tanggalSk: "2026-01-15",
+    akhirMasaBerlaku: "2027-01-15",
+    penerbit: "Admin Pusat",
+    bidangKsda: { namaWilayah: "I. Bogor" },
+    seksiKonservasi: { namaWilayah: "II. Bogor" },
+    jenisTsl: "Mamalia",
+    createdAt: "2026-01-10",
+    updatedAt: "2026-01-20",
+  });
+
   return (
     <div className="flex flex-col gap-4 w-full">
       <div>
@@ -170,14 +241,14 @@ export default function LembagaKonservasiPage() {
         </div>
 
         <div className="flex flex-wrap items-center gap-3 xl:flex-nowrap xl:justify-end">
-          <button
-          type="button"
-            onClick={() => setIsFilterModalOpen(true)}
-            className="inline-flex items-center gap-2 rounded-lg border border-[#D7D7D7] bg-white px-3.5 py-2.5 text-[13px] font-medium text-[#444444] transition-colors hover:bg-[#FAFAFA]"
-          >
-            <Filter className="h-4 w-4" strokeWidth={2.1} />
-            Filter
-          </button>
+          <FilterPopover
+            filterButtonRef={filterButtonRef}
+            filterOpen={filterOpen}
+            setFilterOpen={setFilterOpen}
+            filterState={rowFilterState}
+            toggleRowFilter={toggleRowFilter}
+            clearRowFilters={clearRowFilters}
+          />
           {userRole !== "seksi_wilayah" && (
             <>
               <button
@@ -198,39 +269,6 @@ export default function LembagaKonservasiPage() {
           )}
         </div>
       </div>
-
-      {isFilterModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/40 p-4 pt-24 backdrop-blur-sm">
-          <div className="relative w-full max-w-md rounded-2xl bg-white p-5 shadow-[0_24px_80px_-20px_rgba(0,0,0,0.35)]">
-            <button
-              onClick={() => setIsFilterModalOpen(false)}
-              className="absolute right-4 top-4 inline-flex h-8 w-8 items-center justify-center rounded-full text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700"
-              aria-label="Tutup filter"
-            >
-              <X className="h-4 w-4" />
-            </button>
-
-            <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
-              <FilterGroup
-                title="Bidang KSDA"
-                items={["I. Bogor", "II. Soreang", "III. Ciamis"]}
-              />
-              <FilterGroup
-                title="Seksi Konservasi"
-                items={[
-                  "I. Serang",
-                  "II. Bogor",
-                  "III. Soreang",
-                  "IV. Purwakarta",
-                  "V. Garut",
-                  "VI. Tasikmalaya",
-                ]}
-              />
-              <FilterGroup title="Status" items={["Aktif", "Proses", "Tidak Aktif"]} />
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Column selector + controls */}
       <div className="px-4 py-3">
@@ -286,13 +324,13 @@ export default function LembagaKonservasiPage() {
               <button
                 type="button"
                 onClick={() => setPageSizeOpen((prev) => !prev)}
-                className="flex items-center gap-1 min-w-[40px] rounded-[6px] border border-[#E3E3E3] bg-white px-2 py-1 shadow-sm"
+                className="flex min-w-10 items-center gap-1 rounded-md border border-[#E3E3E3] bg-white px-2 py-1 shadow-sm"
               >
                 <span className="text-[13px] text-[#171717]">{pageSize}</span>
                 <ChevronDown className="h-3 w-3 text-[#4C4C4C]" />
               </button>
               {pageSizeOpen && (
-                <div className="absolute right-0 top-full z-20 mt-1 min-w-[40px] rounded-[6px] border border-[#E3E3E3] bg-white py-1 shadow-md">
+                <div className="absolute right-0 top-full z-20 mt-1 min-w-10 rounded-md border border-[#E3E3E3] bg-white py-1 shadow-md">
                   {[5, 10, 25].map((size) => (
                     <button
                       key={size}
@@ -338,7 +376,7 @@ export default function LembagaKonservasiPage() {
                 </th>
                 <th
                   rowSpan={2}
-                  className="border border-gray-200 px-3 py-2 text-center font-bold text-gray-800 min-w-[130px]"
+                  className="border border-gray-200 px-3 py-2 text-center font-bold text-gray-800 min-w-32.5"
                 >
                   Nama Unit<br />Lembaga
                 </th>
@@ -350,37 +388,37 @@ export default function LembagaKonservasiPage() {
                 </th>
                 <th
                   rowSpan={2}
-                  className="border border-gray-200 px-3 py-2 text-center font-bold text-gray-800 min-w-[80px]"
+                  className="border border-gray-200 px-3 py-2 text-center font-bold text-gray-800 min-w-20"
                 >
                   Penerbit
                 </th>
                 <th
                   rowSpan={2}
-                  className="border border-gray-200 px-3 py-2 text-center font-bold text-gray-800 min-w-[130px]"
+                  className="border border-gray-200 px-3 py-2 text-center font-bold text-gray-800 min-w-32.5"
                 >
                   Nama Direktur/<br />Penanggung Jawab
                 </th>
                 <th
                   rowSpan={2}
-                  className="border border-gray-200 px-3 py-2 text-center font-bold text-gray-800 min-w-[110px]"
+                  className="border border-gray-200 px-3 py-2 text-center font-bold text-gray-800 min-w-27.5"
                 >
                   Nomor Telepon/<br />Faximile
                 </th>
                 <th
                   rowSpan={2}
-                  className="border border-gray-200 px-3 py-2 text-center font-bold text-gray-800 min-w-[110px]"
+                  className="border border-gray-200 px-3 py-2 text-center font-bold text-gray-800 min-w-27.5"
                 >
                   Bidang KSDA<br />Wilayah
                 </th>
                 <th
                   rowSpan={2}
-                  className="border border-gray-200 px-3 py-2 text-center font-bold text-gray-800 min-w-[110px]"
+                  className="border border-gray-200 px-3 py-2 text-center font-bold text-gray-800 min-w-27.5"
                 >
                   Seksi Konservasi<br />Wilayah
                 </th>
                 <th
                   rowSpan={2}
-                  className="border border-gray-200 px-3 py-2 text-center font-bold text-gray-800 min-w-[100px]"
+                  className="border border-gray-200 px-3 py-2 text-center font-bold text-gray-800 min-w-25"
                 >
                   Lokasi Kantor
                 </th>
@@ -392,7 +430,7 @@ export default function LembagaKonservasiPage() {
                 </th>
                 <th
                   rowSpan={2}
-                  className="border border-gray-200 px-3 py-2 text-center font-bold text-gray-800 min-w-[90px]"
+                  className="border border-gray-200 px-3 py-2 text-center font-bold text-gray-800 min-w-22.5"
                 >
                   Status
                 </th>
@@ -404,19 +442,19 @@ export default function LembagaKonservasiPage() {
                 </th>
               </tr>
               <tr className="bg-gray-50 border-b border-gray-200">
-                <th className="border border-gray-200 px-2 py-1.5 text-center font-semibold text-gray-700 min-w-[110px]">
+                <th className="border border-gray-200 px-2 py-1.5 text-center font-semibold text-gray-700 min-w-27.5">
                   No. SK
                 </th>
-                <th className="border border-gray-200 px-2 py-1.5 text-center font-semibold text-gray-700 min-w-[110px]">
+                <th className="border border-gray-200 px-2 py-1.5 text-center font-semibold text-gray-700 min-w-27.5">
                   Tanggal SK
                 </th>
-                <th className="border border-gray-200 px-2 py-1.5 text-center font-semibold text-gray-700 min-w-[100px]">
+                <th className="border border-gray-200 px-2 py-1.5 text-center font-semibold text-gray-700 min-w-25">
                   Akhir masa<br />berlaku izin
                 </th>
-                <th className="border border-gray-200 px-2 py-1.5 text-center font-semibold text-gray-700 min-w-[120px]">
+                <th className="border border-gray-200 px-2 py-1.5 text-center font-semibold text-gray-700 min-w-30">
                   Alamat
                 </th>
-                <th className="border border-gray-200 px-2 py-1.5 text-center font-semibold text-gray-700 min-w-[110px]">
+                <th className="border border-gray-200 px-2 py-1.5 text-center font-semibold text-gray-700 min-w-27.5">
                   Koordinat
                 </th>
               </tr>
@@ -427,7 +465,7 @@ export default function LembagaKonservasiPage() {
                 const isSelected = selectedRows.includes(row.id);
                 return (
                   <tr key={row.id} className={`hover:bg-gray-50 transition-colors ${isSelected ? "bg-[#F6F7E6]" : ""}`}>
-                    <td className="border border-gray-100 px-2 py-3 text-center h-[52px]">
+                    <td className="border border-gray-100 px-2 py-3 text-center h-13">
                       <input
                         type="checkbox"
                         checked={isSelected}
@@ -452,6 +490,10 @@ export default function LembagaKonservasiPage() {
                   <td className="border border-gray-100 px-2 py-3 text-center">
                     <div className="flex items-center justify-center gap-2">
                       <button
+                        onClick={() => {
+                          setSelectedDetailData(buildDetailData(row));
+                          setIsDetailModalOpen(true);
+                        }}
                         className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#9B8CF2] bg-[#DCD6FF] text-[#5E50C7] shadow-sm transition-colors hover:bg-[#cec4ff]"
                         title="Lihat"
                       >
@@ -511,6 +553,14 @@ export default function LembagaKonservasiPage() {
       </div>
 
       <AddDataModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+      <DetailDataModal
+        isOpen={isDetailModalOpen}
+        onClose={() => {
+          setIsDetailModalOpen(false);
+          setSelectedDetailData(null);
+        }}
+        data={selectedDetailData}
+      />
       <UploadDocModal
         isOpen={isUploadModalOpen}
         onClose={() => setIsUploadModalOpen(false)}
@@ -531,21 +581,22 @@ export default function LembagaKonservasiPage() {
   );
 }
 
-function FilterGroup({ title, items }: Readonly<{ title: string; items: string[] }>) {
-  return (
-    <div>
-      <h3 className="mb-2 text-sm font-bold text-gray-900">{title}</h3>
-      <div className="flex flex-col gap-2">
-        {items.map((item) => (
-          <label key={item} className="flex items-center gap-2 text-sm text-gray-700">
-            <input
-              type="checkbox"
-              className="h-4 w-4 rounded border-gray-300 accent-[#8E9E25] focus:ring-[#8E9E25]"
-            />
-            <span>{item}</span>
-          </label>
-        ))}
-      </div>
-    </div>
-  );
-}
+type LembagaKonservasiDetailData = {
+  id: number;
+  namaLembaga: string;
+  namaDirektur: string | null;
+  nomorTelepon: string | null;
+  alamatLembaga: string | null;
+  alamatKantor: string | null;
+  koordinatLembaga: string | null;
+  nomorSk: string | null;
+  tanggalSk: string | null;
+  akhirMasaBerlaku: string | null;
+  penerbit: string | null;
+  bidangKsda?: { namaWilayah: string } | null;
+  seksiKonservasi?: { namaWilayah: string } | null;
+  jenisTsl?: string | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+};
+
