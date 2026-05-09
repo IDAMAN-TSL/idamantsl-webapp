@@ -3,7 +3,6 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import {
   Search,
-  Filter,
   Plus,
   Upload,
   Download,
@@ -16,8 +15,9 @@ import {
   X,
 } from "lucide-react";
 import { AddDataModal } from "@/components/penangkaran/AddDataModal";
-import { DetailDataModal } from "../../components/penangkaran/DetailDataModal";
+import { DetailDataModal } from "@/components/penangkaran/DetailDataModal";
 import { UpdateDataModal } from "@/components/penangkaran/UpdateDataModal";
+import FilterPopover from "@/components/penangkaran/FilterPopover";
 import { UploadDocModal } from "@/components/ui/UploadDocModal";
 import { ExportPreviewModal } from "@/components/penangkaran/ExportPreviewModal";
 
@@ -61,6 +61,8 @@ export interface PenangkaranRow {
   bidangWilayahId: number | null;
   seksiWilayahId: number | null;
   tslId: number | null;
+  jantan?: number | string | null;
+  betina?: number | string | null;
   createdAt?: string | null;
   updatedAt?: string | null;
 }
@@ -73,6 +75,14 @@ type ReferensiTSLRow = {
   statusCites?: string | null;
   statusIucn?: string | null;
 };
+
+type PenangkaranFilterState = {
+  bidang: string[];
+  seksi: string[];
+  status: string[];
+};
+
+
 
 const formatDisplayDate = (dateStr: string | null) => {
   if (!dateStr) return "-";
@@ -113,8 +123,8 @@ const PENANGKARAN_COLUMNS: PenangkaranColumn[] = [
   { label: "Status Perlindungan Nasional", accessor: (row) => formatReferenceValue(row.statusPerlindunganNasional || row.tsl?.statusPerlindunganNasional) },
   { label: "Status CITES", accessor: (row) => formatReferenceValue(row.statusCites || row.tsl?.statusCites) },
   { label: "Status IUCN", accessor: (row) => formatReferenceValue(row.statusIucn || row.tsl?.statusIucn) },
-  { label: "Jantan", accessor: () => "0" },
-  { label: "Betina", accessor: () => "0" },
+  { label: "Jantan", accessor: (row) => (row.jantan === null || row.jantan === undefined || row.jantan === "" ? "-" : String(row.jantan)) },
+  { label: "Betina", accessor: (row) => (row.betina === null || row.betina === undefined || row.betina === "" ? "-" : String(row.betina)) },
 ];
 
 const FILTER_TAGS = PENANGKARAN_COLUMNS.map((column) => column.label);
@@ -152,11 +162,15 @@ export default function PenangkaranPage() {
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
-  const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<PenangkaranRow | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<PenangkaranRow | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [filterState, setFilterState] = useState<PenangkaranFilterState>({
+    bidang: [],
+    seksi: [],
+    status: [],
+  });
   const [selectedFilters, setSelectedFilters] = useState<string[]>([
     "Unit Penangkar",
     "Seksi",
@@ -170,6 +184,8 @@ export default function PenangkaranPage() {
   const [pageSize, setPageSize] = useState(5);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSizeOpen, setPageSizeOpen] = useState(false);
+  const [filterOpen, setFilterOpen] = useState(false);
+  const filterButtonRef = useRef<HTMLDivElement>(null);
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
 
@@ -211,7 +227,9 @@ export default function PenangkaranPage() {
       try {
         const parsed = JSON.parse(userStr);
         setUserRole(parsed.role || "");
-      } catch (e) {}
+      } catch (error) {
+        console.error("Gagal membaca data user:", error);
+      }
     }
   }, []);
 
@@ -241,20 +259,41 @@ export default function PenangkaranPage() {
     const rowsWithReferensi = penangkaranData
       .filter((row) => row.statusVerifikasi === "disetujui")
       .map((row) => {
-      const referensi = row.tslId ? referensiById.get(row.tslId) : undefined;
+        const referensi = row.tslId ? referensiById.get(row.tslId) : undefined;
 
-      return {
-        ...row,
-        jenisTsl: referensi?.namaDaerah || row.tsl?.namaDaerah || null,
-        statusPerlindunganNasional: referensi?.statusPerlindunganNasional || row.tsl?.statusPerlindunganNasional || null,
-        statusCites: referensi?.statusCites || row.tsl?.statusCites || null,
-        statusIucn: referensi?.statusIucn || row.tsl?.statusIucn || null,
-      };
+        return {
+          ...row,
+          jenisTsl: referensi?.namaDaerah || row.tsl?.namaDaerah || null,
+          statusPerlindunganNasional: referensi?.statusPerlindunganNasional || row.tsl?.statusPerlindunganNasional || null,
+          statusCites: referensi?.statusCites || row.tsl?.statusCites || null,
+          statusIucn: referensi?.statusIucn || row.tsl?.statusIucn || null,
+        };
+      });
+
+    const matchesFilter = (values: string[], candidate?: string | null) => {
+      if (values.length === 0) return true;
+      if (!candidate) return false;
+      return values.includes(candidate);
+    };
+
+    const rowsMatchingFilters = rowsWithReferensi.filter((row) => {
+      let statusLabel = "Ditolak";
+      if (row.statusVerifikasi === "disetujui") {
+        statusLabel = "Disetujui";
+      } else if (row.statusVerifikasi === "pending") {
+        statusLabel = "Menunggu";
+      }
+
+      return (
+        matchesFilter(filterState.bidang, row.bidangWilayah?.namaWilayah) &&
+        matchesFilter(filterState.seksi, row.seksiWilayah?.namaWilayah) &&
+        matchesFilter(filterState.status, statusLabel)
+      );
     });
 
     const q = searchQuery.trim().toLowerCase();
-    if (!q) return rowsWithReferensi;
-    return rowsWithReferensi.filter((row) =>
+    if (!q) return rowsMatchingFilters;
+    return rowsMatchingFilters.filter((row) =>
       [
         row.namaPenangkaran,
         row.nomorSk,
@@ -270,7 +309,7 @@ export default function PenangkaranPage() {
         .filter(Boolean)
         .some((v) => v!.toLowerCase().includes(q))
     );
-  }, [searchQuery, penangkaranData, referensiTslData]);
+  }, [filterState, searchQuery, penangkaranData, referensiTslData]);
 
   const totalRows = filteredRows.length;
   const startRow = totalRows === 0 ? 0 : (currentPage - 1) * pageSize + 1;
@@ -312,12 +351,22 @@ export default function PenangkaranPage() {
     );
   };
 
-  const selectAll = () => {
-    setSelectedFilters([...FILTER_TAGS]);
+  const toggleRowFilter = (group: keyof PenangkaranFilterState, value: string) => {
+    setFilterState((previous) => {
+      const current = previous[group];
+      return {
+        ...previous,
+        [group]: current.includes(value)
+          ? current.filter((item) => item !== value)
+          : [...current, value],
+      };
+    });
+    setCurrentPage(1);
   };
 
-  const deselectAll = () => {
-    setSelectedFilters([]);
+  const clearRowFilters = () => {
+    setFilterState({ bidang: [], seksi: [], status: [] });
+    setCurrentPage(1);
   };
 
   const toggleRow = (id: number) => {
@@ -366,8 +415,6 @@ export default function PenangkaranPage() {
     }
   }, [someFilteredSelected]);
 
-  const filterTags = FILTER_TAGS;
-
   return (
     <div className="flex w-full flex-col gap-4">
       <div>
@@ -394,13 +441,14 @@ export default function PenangkaranPage() {
         </div>
 
         <div className="flex flex-wrap items-center gap-3 xl:flex-nowrap xl:justify-end">
-          <button
-            onClick={() => setIsFilterModalOpen(true)}
-            className="inline-flex items-center gap-2 rounded-lg border border-[#D7D7D7] bg-white px-3.5 py-2.5 text-[13px] font-medium text-[#444444] transition-colors hover:bg-[#FAFAFA]"
-          >
-            <Filter className="h-4 w-4" strokeWidth={2.1} />
-            Filter
-          </button>
+          <FilterPopover
+            filterButtonRef={filterButtonRef}
+            filterOpen={filterOpen}
+            setFilterOpen={setFilterOpen}
+            filterState={filterState}
+            toggleRowFilter={toggleRowFilter}
+            clearRowFilters={clearRowFilters}
+          />
           {userRole !== "seksi_wilayah" && (
             <>
               <button
@@ -422,41 +470,6 @@ export default function PenangkaranPage() {
         </div>
       </div>
 
-      {isFilterModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/40 p-4 pt-24 backdrop-blur-sm">
-          <div className="relative w-full max-w-md rounded-2xl bg-white p-5 shadow-[0_24px_80px_-20px_rgba(0,0,0,0.35)]">
-            <button
-              onClick={() => setIsFilterModalOpen(false)}
-              className="absolute right-4 top-4 inline-flex h-8 w-8 items-center justify-center rounded-full text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700"
-              aria-label="Tutup filter"
-            >
-              <X className="h-4 w-4" />
-            </button>
-
-            <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
-              <FilterGroup
-                title="Bidang KSDA"
-                items={["I. Bogor", "II. Soreang", "III. Ciamis"]}
-              />
-              <FilterGroup
-                title="Seksi Konservasi"
-                items={[
-                  "I. Serang",
-                  "II. Bogor",
-                  "III. Soreang",
-                  "IV. Purwakarta",
-                  "V. Garut",
-                  "VI. Tasikmalaya",
-                ]}
-              />
-              <FilterGroup
-                title="Status"
-                items={["Disetujui", "Menunggu", "Ditolak"]}
-              />
-            </div>
-          </div>
-        </div>
-      )}
       <div className="px-4 py-3">
         <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
           <div className="space-y-2.5">
@@ -507,13 +520,13 @@ export default function PenangkaranPage() {
               <button
                 type="button"
                 onClick={() => setPageSizeOpen((prev) => !prev)}
-                className="flex items-center gap-1 min-w-[40px] rounded-[6px] border border-[#E3E3E3] bg-white px-2 py-1 shadow-sm"
+                className="flex items-center gap-1 min-w-10 rounded-md border border-[#E3E3E3] bg-white px-2 py-1 shadow-sm"
               >
                 <span className="text-[13px] text-[#171717]">{pageSize}</span>
                 <ChevronDown className="h-3 w-3 text-[#4C4C4C]" />
               </button>
               {pageSizeOpen && (
-                <div className="absolute right-0 top-full z-20 mt-1 min-w-[40px] rounded-[6px] border border-[#E3E3E3] bg-white py-1 shadow-md">
+                <div className="absolute right-0 top-full z-20 mt-1 min-w-10 rounded-md border border-[#E3E3E3] bg-white py-1 shadow-md">
                   {[5, 10, 25].map((size) => (
                     <button
                       key={size}

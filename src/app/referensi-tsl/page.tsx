@@ -13,13 +13,14 @@ import {
   Pencil,
   Trash2,
   ExternalLink,
-  X,
+ 
 } from "lucide-react";
 import { AddDataModal } from "../../components/referensi-tsl/AddDataModal";
 import { UpdateDataModal } from "../../components/referensi-tsl/UpdateDataModal";
 import { UploadDocModal } from "../../components/ui/UploadDocModal";
 import { ExportReferensiModal, COLUMN_CONFIG } from "../../components/referensi-tsl/ExportReferensiModal";
 import { ViewDataModal } from "../../components/referensi-tsl/ViewDataModal";
+import FilterPopover from "../../components/referensi-tsl/FilterPopover";
 
 const FILTER_TAGS = [
   "Nama Daerah",
@@ -35,7 +36,7 @@ const FILTER_TAGS = [
   "Status IUCN",
 ];
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
 
 interface ReferensiTSL {
   id: number;
@@ -87,6 +88,11 @@ export default function ReferensiTSLPage() {
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [selectedViewData, setSelectedViewData] = useState<ReferensiTSL | null>(null);
   const [selectedRows, setSelectedRows] = useState<number[]>([]);
+
+  // Filter state
+  const [statusVerifikasiFilter, setStatusVerifikasiFilter] = useState<string[]>([]);
+  const filterButtonRef = useRef<HTMLDivElement | null>(null);
+  // filter active state moved into `FilterPopover` component
 
   // ─── Fetch Data ───────────────────────────────────────────────────────────
   const fetchData = useCallback(async () => {
@@ -142,8 +148,23 @@ export default function ReferensiTSLPage() {
   };
 
   // ─── Filter & Pagination ──────────────────────────────────────────────────
+  // Map filter display names to database values
+  const STATUS_MAP: Record<string, string> = {
+    "Disetujui": "disetujui",
+    "Menunggu": "pending",
+    "Ditolak": "ditolak",
+  };
+
   const filteredData = data.filter((row) => {
-    if (row.statusVerifikasi !== "disetujui") return false;
+    // Apply status verification filter
+    const selectedStatuses = statusVerifikasiFilter.map((filter) => STATUS_MAP[filter]);
+    
+    // If filters selected, check if row status is in selected statuses
+    if (statusVerifikasiFilter.length > 0) {
+      if (!row.statusVerifikasi || !selectedStatuses.includes(row.statusVerifikasi)) return false;
+    }
+    
+    // Apply search query filter
     if (!searchQuery) return true;
     const q = searchQuery.toLowerCase();
     return [row.namaDaerah, row.jenis, row.kingdom, row.divisi, row.spesies]
@@ -240,13 +261,14 @@ export default function ReferensiTSLPage() {
         </div>
 
         <div className="flex flex-wrap items-center gap-3 xl:flex-nowrap xl:justify-end">
-          <button
-            type="button"
-            className="inline-flex items-center gap-2 rounded-lg border border-[#D7D7D7] bg-white px-3.5 py-2.5 text-[13px] font-medium text-[#444444] transition-colors hover:bg-[#FAFAFA]"
-          >
-            <Filter className="h-4 w-4" strokeWidth={2.1} />
-            Filter
-          </button>
+          <FilterPopover
+            filterButtonRef={filterButtonRef}
+            filterOpen={isFilterModalOpen}
+            setFilterOpen={setIsFilterModalOpen}
+            statusVerifikasiFilter={statusVerifikasiFilter}
+            onStatusVerifikasiChange={setStatusVerifikasiFilter}
+            clearFilters={() => setStatusVerifikasiFilter([])}
+          />
           {userRole !== "seksi_wilayah" && (
             <>
               <button
@@ -270,25 +292,7 @@ export default function ReferensiTSLPage() {
         </div>
       </div>
 
-      {/* Filter Modal */}
-      {isFilterModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/40 p-4 pt-24 backdrop-blur-sm">
-          <div className="relative w-full max-w-md rounded-2xl bg-white p-5 shadow-[0_24px_80px_-20px_rgba(0,0,0,0.35)]">
-            <button
-              onClick={() => setIsFilterModalOpen(false)}
-              className="absolute right-4 top-4 inline-flex h-8 w-8 items-center justify-center rounded-full text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700"
-              aria-label="Tutup filter"
-            >
-              <X className="h-4 w-4" />
-            </button>
-            <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
-              <FilterGroup title="Jenis TSL" items={["Tumbuhan", "Satwa"]} />
-              <FilterGroup title="Status CITES" items={["Appendix I", "Appendix II", "Appendix III"]} />
-              <FilterGroup title="Status IUCN" items={["LC", "VU", "EN", "CR"]} />
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Filter Dropdown handled by `FilterPopover` component (button + dropdown) */}
 
       {/* Column selector + controls */}
       <div className="px-4 py-3">
@@ -607,22 +611,6 @@ export default function ReferensiTSLPage() {
         onClose={() => { setIsViewModalOpen(false); setSelectedViewData(null); }}
         data={selectedViewData}
       />
-    </div>
-  );
-}
-
-function FilterGroup({ title, items }: Readonly<{ title: string; items: string[] }>) {
-  return (
-    <div>
-      <h3 className="mb-2 text-sm font-bold text-gray-900">{title}</h3>
-      <div className="flex flex-col gap-2">
-        {items.map((item) => (
-          <label key={item} className="flex items-center gap-2 text-sm text-gray-700">
-            <input type="checkbox" className="h-4 w-4 rounded border-gray-300 accent-[#8E9E25]" />
-            <span>{item}</span>
-          </label>
-        ))}
-      </div>
     </div>
   );
 }

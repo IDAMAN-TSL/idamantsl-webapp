@@ -4,9 +4,11 @@ import Image from "next/image";
 import { UserCircle, Menu, Bell } from "lucide-react";
 import LogoIcon from "@/assets/icon/Logo.svg";
 import { useEffect, useState } from "react";
+import { NotificationModal } from "./NotificationModal";
 
 export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
   const [user, setUser] = useState<{ nama: string; role: string } | null>(null);
+  const [isNotifOpen, setIsNotifOpen] = useState(false);
 
   useEffect(() => {
     const userStr = localStorage.getItem("user");
@@ -43,7 +45,8 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
   const initials = getInitials(displayName);
 
   return (
-    <header className="flex h-[88px] shrink-0 items-center justify-between border-b border-gray-200 bg-white px-4 md:px-8">
+    <>
+      <header className="flex h-[88px] shrink-0 items-center justify-between border-b border-gray-200 bg-white px-4 md:px-8">
       {/* Left: Burger + Logo (mobile only) */}
       <div className="flex items-center gap-3 md:hidden">
         <button
@@ -77,7 +80,11 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
       {/* Right Section: Notification + Account */}
       <div className="flex items-center gap-6">
         {/* Notification Bell */}
-        <button className="flex h-10 w-10 items-center justify-center rounded-full text-gray-500 hover:bg-gray-50 transition-colors">
+        <button
+          onClick={() => setIsNotifOpen(true)}
+          className="flex h-10 w-10 items-center justify-center rounded-full text-gray-500 hover:bg-gray-50 transition-colors"
+          aria-label="Buka notifikasi"
+        >
           <Bell className="h-6 w-6" strokeWidth={1.5} />
         </button>
 
@@ -98,6 +105,9 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
           </div>
         </div>
       </div>
-    </header>
+      </header>
+
+      <NotificationModal isOpen={isNotifOpen} onClose={() => setIsNotifOpen(false)} />
+    </>
   );
 }

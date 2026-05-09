@@ -7,6 +7,7 @@ import {
   ChevronRight,
   Plus,
   X,
+  AlertCircle,
 } from "lucide-react";
 
 interface AddDataModalProps {
@@ -16,7 +17,7 @@ interface AddDataModalProps {
 }
 
 const sections = ["Informasi Umum", "Informasi Status"];
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
 
 const IUCN_OPTIONS = [
   { label: "EX (Extinct/Punah)", value: "punah" },
@@ -97,13 +98,26 @@ export function AddDataModal({ isOpen, onClose, onSuccess }: Readonly<AddDataMod
         body: JSON.stringify(form),
       });
       if (!res.ok) {
+        if (res.status === 401) {
+          throw new Error("Sesi Anda telah berakhir. Silakan login kembali.");
+        }
+        if (res.status === 403) {
+          throw new Error("Anda tidak memiliki izin untuk menambah data.");
+        }
+        if (res.status === 409) {
+          throw new Error("Data dengan nama daerah ini sudah ada.");
+        }
         const err = await res.json();
-        throw new Error(err.message ?? "Gagal menyimpan data");
+        throw new Error(err.message ?? `Gagal menyimpan data (${res.status})`);
       }
       onSuccess?.();
       closeAndReset();
     } catch (err: unknown) {
-      setErrorMsg(err instanceof Error ? err.message : "Terjadi kesalahan.");
+      if (err instanceof TypeError) {
+        setErrorMsg("Gagal terhubung ke server. Periksa koneksi internet Anda.");
+      } else {
+        setErrorMsg(err instanceof Error ? err.message : "Terjadi kesalahan yang tidak diketahui.");
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -179,12 +193,26 @@ export function AddDataModal({ isOpen, onClose, onSuccess }: Readonly<AddDataMod
         )}
 
         {errorMsg && (
-          <p className="mt-3 text-[12px] text-red-600">{errorMsg}</p>
+          <div className="mt-4 flex gap-3 rounded-lg border border-red-200 bg-red-50 p-3">
+            <AlertCircle className="h-4 w-4 flex-shrink-0 text-red-600 mt-0.5" strokeWidth={2} />
+            <div className="flex-1">
+              <p className="text-[12px] text-red-700 font-medium">{errorMsg}</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setErrorMsg(null)}
+              className="flex-shrink-0 text-red-400 hover:text-red-600"
+              aria-label="Tutup pesan error"
+            >
+              <X className="h-4 w-4" strokeWidth={2} />
+            </button>
+          </div>
         )}
 
-        {/* Navigation Buttons */}
-        <div className="mt-8 flex items-center justify-between">
-          <div>
+        <div className="mt-8 grid gap-4 sm:grid-cols-[1fr_auto] sm:items-end">
+          
+
+          <div className="flex items-center justify-end gap-3">
             {section > 0 ? (
               <button
                 type="button"
@@ -194,12 +222,8 @@ export function AddDataModal({ isOpen, onClose, onSuccess }: Readonly<AddDataMod
                 <ChevronLeft className="h-4 w-4" strokeWidth={2.2} />
                 Sebelumnya
               </button>
-            ) : (
-              <span />
-            )}
-          </div>
+            ) : null}
 
-          <div>
             {section < sections.length - 1 ? (
               <button
                 type="button"
