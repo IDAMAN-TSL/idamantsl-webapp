@@ -2,6 +2,8 @@
 
 import React, { useEffect, useState } from "react";
 import { AlertCircle, ChevronDown, Pencil, X } from "lucide-react";
+import { AddDataAlertModal } from "@/components/layout/AddDataAlertModal";
+import { BidangConfirmModal } from "@/components/layout/BidangConfirmModal";
 
 interface ReferensiTSL {
   id: number;
@@ -59,13 +61,15 @@ const PERLINDUNGAN_OPTIONS = [
 ];
 
 const getUpdateErrorMessage = async (res: Response) => {
+  const err = await res.json().catch(() => null);
+  if (err?.message) return err.message;
+  
   if (res.status === 401) return "Sesi Anda telah berakhir. Silakan login kembali.";
   if (res.status === 403) return "Anda tidak memiliki izin untuk mengubah data.";
   if (res.status === 404) return "Data tidak ditemukan. Mungkin telah dihapus.";
   if (res.status === 409) return "Data dengan nama daerah ini sudah ada.";
 
-  const err = await res.json().catch(() => null);
-  return err?.message ?? `Gagal memperbarui data (${res.status})`;
+  return `Gagal memperbarui data (${res.status})`;
 };
 
 const formatFooterDate = (value?: string | null) => {
@@ -80,6 +84,11 @@ const formatFooterDate = (value?: string | null) => {
 export function UpdateDataModal({ isOpen, onClose, data, onSuccess }: Readonly<UpdateDataModalProps>) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [alertState, setAlertState] = useState<{isOpen: boolean; type: "success" | "error"; title?: string; message?: string}>({
+    isOpen: false,
+    type: "success"
+  });
+  const [showBidangConfirm, setShowBidangConfirm] = useState(false);
 
   const [form, setForm] = useState({
     namaDaerah: "",
@@ -127,6 +136,17 @@ export function UpdateDataModal({ isOpen, onClose, data, onSuccess }: Readonly<U
       setErrorMsg("Nama Daerah dan Jenis TSL wajib diisi.");
       return;
     }
+    // Bidang wilayah: tampilkan konfirmasi dulu
+    const userStr = globalThis.window === undefined ? null : localStorage.getItem("user");
+    const userRole = userStr ? JSON.parse(userStr).role : "";
+    if (userRole === "bidang_wilayah") {
+      setShowBidangConfirm(true);
+      return;
+    }
+    await doSubmit();
+  };
+
+  const doSubmit = async () => {
 
     setIsSubmitting(true);
     setErrorMsg(null);
@@ -144,17 +164,52 @@ export function UpdateDataModal({ isOpen, onClose, data, onSuccess }: Readonly<U
 
       if (!res.ok) throw new Error(await getUpdateErrorMessage(res));
 
-      onSuccess?.();
-      onClose();
-    } catch (err: unknown) {
-      if (err instanceof TypeError) {
-        setErrorMsg("Gagal terhubung ke server. Periksa koneksi internet Anda.");
-        return;
+      const userStr = globalThis.window === undefined ? null : localStorage.getItem("user");
+      const userRole = userStr ? JSON.parse(userStr).role : "";
+
+      if (userRole === "admin_pusat") {
+        setAlertState({ 
+          isOpen: true, 
+          type: "success",
+          title: "Perbarui data berhasil!",
+          message: "Data berhasil diperbarui di database."
+        });
+      } else {
+        setAlertState({ 
+          isOpen: true, 
+          type: "success",
+          title: "Perbarui data diajukan!",
+          message: "Data diverifikasi terlebih dahulu oleh Admin Pusat."
+        });
       }
-      setErrorMsg(err instanceof Error ? err.message : "Terjadi kesalahan yang tidak diketahui.");
+    } catch (err: unknown) {
+      const userStr = globalThis.window === undefined ? null : localStorage.getItem("user");
+      const userRole = userStr ? JSON.parse(userStr).role : "";
+      
+      if (userRole === "admin_pusat") {
+        setAlertState({ 
+          isOpen: true, 
+          type: "error",
+          title: "Perbarui data gagal!",
+          message: err instanceof Error ? err.message : "Terjadi kesalahan yang tidak diketahui."
+        });
+      } else {
+        const msg = err instanceof TypeError ? "Gagal terhubung ke server. Periksa koneksi internet Anda." : (err instanceof Error ? err.message : "Terjadi kesalahan yang tidak diketahui.");
+        setAlertState({ 
+          isOpen: true, 
+          type: "error",
+          title: "Terjadi kesalahan!",
+          message: msg
+        });
+      }
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleBidangConfirm = async () => {
+    setShowBidangConfirm(false);
+    await doSubmit();
   };
 
   return (
@@ -249,6 +304,26 @@ export function UpdateDataModal({ isOpen, onClose, data, onSuccess }: Readonly<U
           </div>
         </div>
       </div>
+      <AddDataAlertModal 
+        isOpen={alertState.isOpen}
+        type={alertState.type}
+        title={alertState.title}
+        message={alertState.message}
+        onClose={() => {
+          setAlertState((prev) => ({ ...prev, isOpen: false }));
+          if (alertState.type === "success") {
+            onSuccess?.();
+            onClose();
+          }
+        }}
+      />
+      <BidangConfirmModal
+        isOpen={showBidangConfirm}
+        type="update"
+        onClose={() => setShowBidangConfirm(false)}
+        onConfirm={handleBidangConfirm}
+        isLoading={isSubmitting}
+      />
     </div>
   );
 }

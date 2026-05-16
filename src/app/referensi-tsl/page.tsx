@@ -21,6 +21,8 @@ import { UploadDocModal } from "../../components/ui/UploadDocModal";
 import { ExportReferensiModal, COLUMN_CONFIG } from "../../components/referensi-tsl/ExportReferensiModal";
 import { ViewDataModal } from "../../components/referensi-tsl/ViewDataModal";
 import FilterPopover from "../../components/referensi-tsl/FilterPopover";
+import { AddDataAlertModal } from "../../components/layout/AddDataAlertModal";
+import { BidangConfirmModal } from "../../components/layout/BidangConfirmModal";
 
 const FILTER_TAGS = [
   "Nama Daerah",
@@ -71,6 +73,10 @@ export default function ReferensiTSLPage() {
 
   const [selectedUpdateData, setSelectedUpdateData] = useState<ReferensiTSL | null>(null);
   const [deleteTargetId, setDeleteTargetId] = useState<number | null>(null);
+  const [alertState, setAlertState] = useState<{isOpen: boolean; type: "success" | "error"; title?: string; message?: string}>({
+    isOpen: false,
+    type: "success"
+  });
 
   const [selectedFilters, setSelectedFilters] = useState<string[]>([
     "Nama Daerah",
@@ -90,7 +96,7 @@ export default function ReferensiTSLPage() {
   const [selectedRows, setSelectedRows] = useState<number[]>([]);
 
   // Filter state
-  const [statusVerifikasiFilter, setStatusVerifikasiFilter] = useState<string[]>([]);
+  const [statusVerifikasiFilter, setStatusVerifikasiFilter] = useState<string[]>(["Disetujui"]);
   const filterButtonRef = useRef<HTMLDivElement | null>(null);
   // filter active state moved into `FilterPopover` component
 
@@ -132,6 +138,20 @@ export default function ReferensiTSLPage() {
   // ─── Delete ───────────────────────────────────────────────────────────────
   const handleDelete = async () => {
     if (deleteTargetId === null) return;
+    const userStr = globalThis.window === undefined ? null : localStorage.getItem("user");
+    const role = userStr ? JSON.parse(userStr).role : "";
+    // bidang_wilayah: tampilkan BidangConfirmModal
+    if (role === "bidang_wilayah") {
+      setIsDeleteConfirmOpen(true);
+      return;
+    }
+    await doDelete();
+  };
+
+  const doDelete = async () => {
+    if (deleteTargetId === null) return;
+    const userStr = globalThis.window === undefined ? null : localStorage.getItem("user");
+    const role = userStr ? JSON.parse(userStr).role : "";
     try {
       const token = localStorage.getItem("token");
       const res = await fetch(`${API_BASE}/api/referensi-tsl/${deleteTargetId}`, {
@@ -142,8 +162,17 @@ export default function ReferensiTSLPage() {
       setIsDeleteConfirmOpen(false);
       setDeleteTargetId(null);
       fetchData();
+      if (role === "admin_pusat") {
+        setAlertState({ isOpen: true, type: "success", title: "Hapus data berhasil!", message: "Data berhasil dihapus dari database." });
+      } else if (role === "bidang_wilayah") {
+        setAlertState({ isOpen: true, type: "success", title: "Hapus data diajukan!", message: "Data diverifikasi terlebih dahulu oleh Admin Pusat." });
+      }
     } catch {
-      alert("Gagal menghapus data. Silakan coba lagi.");
+      if (role === "admin_pusat") {
+        setAlertState({ isOpen: true, type: "error", title: "Hapus data gagal!", message: "Gagal menghapus data. Silakan coba lagi." });
+      } else {
+        setAlertState({ isOpen: true, type: "error", title: "Terjadi kesalahan!", message: "Gagal menghapus data. Silakan coba lagi." });
+      }
     }
   };
 
@@ -267,7 +296,7 @@ export default function ReferensiTSLPage() {
             setFilterOpen={setIsFilterModalOpen}
             statusVerifikasiFilter={statusVerifikasiFilter}
             onStatusVerifikasiChange={setStatusVerifikasiFilter}
-            clearFilters={() => setStatusVerifikasiFilter([])}
+            clearFilters={() => setStatusVerifikasiFilter(["Disetujui"])}
           />
           {userRole !== "seksi_wilayah" && (
             <>
@@ -559,8 +588,16 @@ export default function ReferensiTSLPage() {
         </div>
       </div>
 
-      {/* Delete Confirm Modal */}
-      {isDeleteConfirmOpen && (
+      {/* Delete Confirm Modal — admin_pusat pakai inline, bidang_wilayah pakai BidangConfirmModal */}
+      {isDeleteConfirmOpen && userRole === "bidang_wilayah" && (
+        <BidangConfirmModal
+          isOpen={isDeleteConfirmOpen}
+          type="delete"
+          onClose={() => { setIsDeleteConfirmOpen(false); setDeleteTargetId(null); }}
+          onConfirm={() => { setIsDeleteConfirmOpen(false); doDelete(); }}
+        />
+      )}
+      {isDeleteConfirmOpen && userRole !== "bidang_wilayah" && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
           <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl">
             <h3 className="text-[16px] font-bold text-gray-900">Hapus Data?</h3>
@@ -575,7 +612,7 @@ export default function ReferensiTSLPage() {
                 Batal
               </button>
               <button
-                onClick={handleDelete}
+                onClick={doDelete}
                 className="rounded-lg bg-red-600 px-4 py-2 text-[13px] font-semibold text-white hover:bg-red-700"
               >
                 Hapus
@@ -610,6 +647,13 @@ export default function ReferensiTSLPage() {
         isOpen={isViewModalOpen}
         onClose={() => { setIsViewModalOpen(false); setSelectedViewData(null); }}
         data={selectedViewData}
+      />
+      <AddDataAlertModal
+        isOpen={alertState.isOpen}
+        type={alertState.type}
+        title={alertState.title}
+        message={alertState.message}
+        onClose={() => setAlertState((prev) => ({ ...prev, isOpen: false }))}
       />
     </div>
   );

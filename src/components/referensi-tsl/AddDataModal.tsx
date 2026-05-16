@@ -9,6 +9,8 @@ import {
   X,
   AlertCircle,
 } from "lucide-react";
+import { AddDataAlertModal } from "@/components/layout/AddDataAlertModal";
+import { BidangConfirmModal } from "@/components/layout/BidangConfirmModal";
 
 interface AddDataModalProps {
   isOpen: boolean;
@@ -51,6 +53,11 @@ export function AddDataModal({ isOpen, onClose, onSuccess }: Readonly<AddDataMod
   const [section, setSection] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [alertState, setAlertState] = useState<{isOpen: boolean; type: "success" | "error"; title?: string; message?: string}>({
+    isOpen: false,
+    type: "success"
+  });
+  const [showBidangConfirm, setShowBidangConfirm] = useState(false);
 
   const [form, setForm] = useState({
     namaDaerah: "",
@@ -85,6 +92,17 @@ export function AddDataModal({ isOpen, onClose, onSuccess }: Readonly<AddDataMod
       setErrorMsg("Nama Daerah dan Jenis TSL wajib diisi.");
       return;
     }
+    // Cek role: bidang_wilayah tampilkan konfirmasi dulu
+    const userStr = globalThis.window === undefined ? null : localStorage.getItem("user");
+    const userRole = userStr ? JSON.parse(userStr).role : "";
+    if (userRole === "bidang_wilayah") {
+      setShowBidangConfirm(true);
+      return;
+    }
+    await doSubmit();
+  };
+
+  const doSubmit = async () => {
     setIsSubmitting(true);
     setErrorMsg(null);
     try {
@@ -110,20 +128,42 @@ export function AddDataModal({ isOpen, onClose, onSuccess }: Readonly<AddDataMod
         const err = await res.json();
         throw new Error(err.message ?? `Gagal menyimpan data (${res.status})`);
       }
-      onSuccess?.();
-      closeAndReset();
-    } catch (err: unknown) {
-      if (err instanceof TypeError) {
-        setErrorMsg("Gagal terhubung ke server. Periksa koneksi internet Anda.");
+      
+      const userStr = globalThis.window === undefined ? null : localStorage.getItem("user");
+      const userRole = userStr ? JSON.parse(userStr).role : "";
+
+      if (userRole === "admin_pusat") {
+        setAlertState({ isOpen: true, type: "success" });
       } else {
-        setErrorMsg(err instanceof Error ? err.message : "Terjadi kesalahan yang tidak diketahui.");
+        setAlertState({ 
+          isOpen: true, 
+          type: "success", 
+          title: "Tambah data diajukan!", 
+          message: "Data diverifikasi terlebih dahulu oleh Admin Pusat." 
+        });
+      }
+    } catch (err: unknown) {
+      const userStr = globalThis.window === undefined ? null : localStorage.getItem("user");
+      const userRole = userStr ? JSON.parse(userStr).role : "";
+
+      if (userRole === "admin_pusat") {
+        setAlertState({ isOpen: true, type: "error", message: err instanceof TypeError ? "Gagal terhubung ke server. Periksa koneksi internet Anda." : (err instanceof Error ? err.message : "Terjadi kesalahan yang tidak diketahui.") });
+      } else {
+        const msg = err instanceof TypeError ? "Gagal terhubung ke server. Periksa koneksi internet Anda." : (err instanceof Error ? err.message : "Terjadi kesalahan yang tidak diketahui.");
+        setAlertState({ isOpen: true, type: "error", title: "Terjadi kesalahan!", message: msg });
       }
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  const handleBidangConfirm = async () => {
+    setShowBidangConfirm(false);
+    await doSubmit();
+  };
+
   return (
+    <>
     <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/40 p-4 backdrop-blur-sm md:p-8">
       <div className="relative w-full max-w-2xl rounded-[14px] bg-white px-8 py-6 shadow-[0_24px_80px_-20px_rgba(0,0,0,0.35)]">
         <button
@@ -248,6 +288,27 @@ export function AddDataModal({ isOpen, onClose, onSuccess }: Readonly<AddDataMod
         </div>
       </div>
     </div>
+    <AddDataAlertModal 
+      isOpen={alertState.isOpen}
+      type={alertState.type}
+      title={alertState.title}
+      message={alertState.message}
+      onClose={() => {
+        setAlertState((prev) => ({ ...prev, isOpen: false }));
+        if (alertState.type === "success") {
+          onSuccess?.();
+          closeAndReset();
+        }
+      }}
+    />
+    <BidangConfirmModal
+      isOpen={showBidangConfirm}
+      type="add"
+      onClose={() => setShowBidangConfirm(false)}
+      onConfirm={handleBidangConfirm}
+      isLoading={isSubmitting}
+    />
+    </>
   );
 }
 

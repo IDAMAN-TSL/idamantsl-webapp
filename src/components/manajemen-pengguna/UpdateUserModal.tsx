@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { ChevronDown, Eye, EyeOff, MapPin, X } from "lucide-react";
+import { AddDataAlertModal } from "@/components/layout/AddDataAlertModal";
 
 interface UserData {
   id: number;
@@ -114,6 +115,10 @@ export function UpdateUserModal({ isOpen, onClose, onSuccess, userData }: Readon
   });
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [alertState, setAlertState] = useState<{isOpen: boolean; type: "success" | "error"; title?: string; message?: string}>({
+    isOpen: false,
+    type: "success"
+  });
 
   useEffect(() => {
     if (userData) {
@@ -226,6 +231,10 @@ export function UpdateUserModal({ isOpen, onClose, onSuccess, userData }: Readon
       });
 
       const result = await res.json();
+      
+      const userStr = globalThis.window === undefined ? null : localStorage.getItem("user");
+      const userRole = userStr ? JSON.parse(userStr).role : "";
+
       if (res.ok && (result?.success ?? true)) {
         setFormData({
           namaLengkap: "",
@@ -236,14 +245,45 @@ export function UpdateUserModal({ isOpen, onClose, onSuccess, userData }: Readon
           alamatKantor: "",
         });
         setErrors({});
-        if (onSuccess) onSuccess();
-        onClose();
+        
+        if (userRole === "admin_pusat") {
+          setAlertState({ 
+            isOpen: true, 
+            type: "success",
+            title: "Perbarui data berhasil!",
+            message: "Data pengguna berhasil diperbarui di database."
+          });
+        } else {
+          if (onSuccess) onSuccess();
+          onClose();
+        }
       } else {
-        alert(result.message || "Gagal mengubah pengguna");
+        if (userRole === "admin_pusat") {
+          setAlertState({ 
+            isOpen: true, 
+            type: "error",
+            title: "Perbarui data gagal!",
+            message: result.message || "Pastikan semua data terisi dengan benar."
+          });
+        } else {
+          alert(result.message || "Gagal mengubah pengguna");
+        }
       }
     } catch (error) {
       console.error("Gagal mengubah pengguna", error);
-      alert("Terjadi kesalahan sistem");
+      const userStr = globalThis.window === undefined ? null : localStorage.getItem("user");
+      const userRole = userStr ? JSON.parse(userStr).role : "";
+      
+      if (userRole === "admin_pusat") {
+        setAlertState({ 
+          isOpen: true, 
+          type: "error",
+          title: "Perbarui data gagal!",
+          message: "Terjadi kesalahan sistem."
+        });
+      } else {
+        alert("Terjadi kesalahan sistem");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -379,6 +419,19 @@ export function UpdateUserModal({ isOpen, onClose, onSuccess, userData }: Readon
           </div>
         </div>
       </div>
+      <AddDataAlertModal 
+        isOpen={alertState.isOpen}
+        type={alertState.type}
+        title={alertState.title}
+        message={alertState.message}
+        onClose={() => {
+          setAlertState((prev) => ({ ...prev, isOpen: false }));
+          if (alertState.type === "success") {
+            if (onSuccess) onSuccess();
+            onClose();
+          }
+        }}
+      />
     </div>
   );
 }

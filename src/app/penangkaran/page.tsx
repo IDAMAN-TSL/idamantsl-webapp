@@ -20,6 +20,8 @@ import { UpdateDataModal } from "@/components/penangkaran/UpdateDataModal";
 import FilterPopover from "@/components/penangkaran/FilterPopover";
 import { UploadDocModal } from "@/components/ui/UploadDocModal";
 import { ExportPreviewModal } from "@/components/penangkaran/ExportPreviewModal";
+import { AddDataAlertModal } from "@/components/layout/AddDataAlertModal";
+import { BidangConfirmModal } from "@/components/layout/BidangConfirmModal";
 
 type StatusVerifikasi = "pending" | "disetujui" | "ditolak";
 
@@ -169,7 +171,7 @@ export default function PenangkaranPage() {
   const [filterState, setFilterState] = useState<PenangkaranFilterState>({
     bidang: [],
     seksi: [],
-    status: [],
+    status: ["Disetujui"],
   });
   const [selectedFilters, setSelectedFilters] = useState<string[]>([
     "Unit Penangkar",
@@ -186,6 +188,10 @@ export default function PenangkaranPage() {
   const [pageSizeOpen, setPageSizeOpen] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
   const filterButtonRef = useRef<HTMLDivElement>(null);
+  const [alertState, setAlertState] = useState<{isOpen: boolean; type: "success" | "error"; title?: string; message?: string}>({
+    isOpen: false,
+    type: "success"
+  });
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
 
@@ -233,22 +239,79 @@ export default function PenangkaranPage() {
     }
   }, []);
 
+  const handleDeleteClick = () => {
+    if (!deleteTarget) return;
+    const userStr = globalThis.window === undefined ? null : localStorage.getItem("user");
+    const role = userStr ? JSON.parse(userStr).role : "";
+    if (role === "bidang_wilayah") {
+      // BidangConfirmModal ditampilkan, deleteTarget sudah ter-set
+      return;
+    }
+    handleDelete();
+  };
+
   const handleDelete = async () => {
     if (!deleteTarget) return;
+    const userStr = globalThis.window === undefined ? null : localStorage.getItem("user");
+    const role = userStr ? JSON.parse(userStr).role : "";
     try {
       setIsDeleting(true);
       const res = await fetch(`${API_URL}/api/penangkaran/${deleteTarget.id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${getToken()}` },
       });
+
       if (res.ok) {
         setDeleteTarget(null);
         fetchPenangkaran();
+        if (role === "admin_pusat") {
+          setAlertState({
+            isOpen: true,
+            type: "success",
+            title: "Hapus data berhasil!",
+            message: "Data berhasil dihapus dari database."
+          });
+        } else if (role === "bidang_wilayah") {
+          setAlertState({
+            isOpen: true,
+            type: "success",
+            title: "Hapus data diajukan!",
+            message: "Penghapusan data diverifikasi terlebih dahulu oleh Admin Pusat."
+          });
+        }
       } else {
-        alert("Gagal menghapus data");
+        if (role === "admin_pusat") {
+          setAlertState({
+            isOpen: true,
+            type: "error",
+            title: "Hapus data gagal!",
+            message: "Terjadi kesalahan saat menghapus data."
+          });
+        } else {
+          setAlertState({
+            isOpen: true,
+            type: "error",
+            title: "Hapus data gagal!",
+            message: "Terjadi kesalahan saat menghapus data."
+          });
+        }
       }
     } catch {
-      alert("Terjadi kesalahan");
+      if (role === "admin_pusat") {
+        setAlertState({
+          isOpen: true,
+          type: "error",
+          title: "Hapus data gagal!",
+          message: "Terjadi kesalahan sistem."
+        });
+      } else {
+        setAlertState({
+          isOpen: true,
+          type: "error",
+          title: "Terjadi kesalahan!",
+          message: "Terjadi kesalahan sistem."
+        });
+      }
     } finally {
       setIsDeleting(false);
     }
@@ -365,7 +428,7 @@ export default function PenangkaranPage() {
   };
 
   const clearRowFilters = () => {
-    setFilterState({ bidang: [], seksi: [], status: [] });
+    setFilterState({ bidang: [], seksi: [], status: ["Disetujui"] });
     setCurrentPage(1);
   };
 
@@ -788,6 +851,14 @@ export default function PenangkaranPage() {
           </div>
         </div>
       )}
+      
+      <AddDataAlertModal 
+        isOpen={alertState.isOpen}
+        type={alertState.type}
+        title={alertState.title}
+        message={alertState.message}
+        onClose={() => setAlertState((prev) => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 }

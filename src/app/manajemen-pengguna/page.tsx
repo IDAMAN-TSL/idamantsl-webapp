@@ -19,6 +19,7 @@ import { DetailUserModal } from "@/components/manajemen-pengguna/DetailUserModal
 import {
   getPeranFilterKey,
 } from "@/components/manajemen-pengguna/peran-filter-options";
+import { AddDataAlertModal } from "@/components/layout/AddDataAlertModal";
 
 type StatusPengguna = "Aktif" | "Non-aktif";
 
@@ -68,6 +69,10 @@ export default function ManajemenPenggunaPage() {
   const [selectedUser, setSelectedUser] = useState<PenggunaRow | null>(null);
   const [isDeleteUserModalOpen, setIsDeleteUserModalOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState<PenggunaRow | null>(null);
+  const [deleteAlertState, setDeleteAlertState] = useState<{isOpen: boolean; type: "success" | "error"; title?: string; message?: string}>({
+    isOpen: false,
+    type: "success"
+  });
   const filterButtonRef = useRef<HTMLDivElement | null>(null);
 
   const handleViewUser = (user: PenggunaRow) => {
@@ -551,6 +556,16 @@ export default function ManajemenPenggunaPage() {
           onClose={() => setIsDeleteUserModalOpen(false)}
           userData={userToDelete}
           onSuccess={fetchUsers}
+          onDeleteAlert={(type, title, message) =>
+            setDeleteAlertState({ isOpen: true, type, title, message })
+          }
+        />
+        <AddDataAlertModal
+          isOpen={deleteAlertState.isOpen}
+          type={deleteAlertState.type}
+          title={deleteAlertState.title}
+          message={deleteAlertState.message}
+          onClose={() => setDeleteAlertState((prev) => ({ ...prev, isOpen: false }))}
         />
         </>
       )}

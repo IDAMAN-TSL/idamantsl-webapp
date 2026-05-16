@@ -19,6 +19,7 @@ import { UpdateDataModal } from "../../components/pengedaran-luar/UpdateDataModa
 import { DetailDataModal } from "../../components/pengedaran-luar/DetailDataModal";
 import { UploadDocModal } from "../../components/ui/UploadDocModal";
 import { ExportPreviewModal } from "../../components/penangkaran/ExportPreviewModal";
+import { AddDataAlertModal } from "../../components/layout/AddDataAlertModal";
 
 interface PengedaranLuarDetailData {
   id: number;
@@ -92,6 +93,12 @@ export default function PengedaranLuarPage() {
   const [selectedDetailData, setSelectedDetailData] = useState<PengedaranLuarDetailData | null>(null);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [deleteTargetId, setDeleteTargetId] = useState<number | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [alertState, setAlertState] = useState<{isOpen: boolean; type: "success" | "error"; title?: string; message?: string}>({
+    isOpen: false,
+    type: "success"
+  });
   const [filterOpen, setFilterOpen] = useState(false);
   const [filterState, setFilterState] = useState({
     bidang: [] as string[],
@@ -126,6 +133,43 @@ export default function PengedaranLuarPage() {
       } catch (e) {}
     }
   }, []);
+
+  const handleDelete = async () => {
+    if (deleteTargetId === null) return;
+    const userStr = globalThis.window === undefined ? null : localStorage.getItem("user");
+    const role = userStr ? JSON.parse(userStr).role : "";
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+    const token = globalThis.window === undefined ? null : localStorage.getItem("token");
+    try {
+      setIsDeleting(true);
+      const res = await fetch(`${API_URL}/api/pengedaran-luar/${deleteTargetId}`, {
+        method: "DELETE",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      setDeleteTargetId(null);
+      if (res.ok) {
+        if (role === "admin_pusat") {
+          setAlertState({ isOpen: true, type: "success", title: "Hapus data berhasil!", message: "Data berhasil dihapus dari database." });
+        } else if (role === "bidang_wilayah") {
+          setAlertState({ isOpen: true, type: "success", title: "Hapus data diajukan!", message: "Penghapusan data diverifikasi terlebih dahulu oleh Admin Pusat." });
+        }
+      } else {
+        if (role === "admin_pusat") {
+          setAlertState({ isOpen: true, type: "error", title: "Hapus data gagal!", message: "Terjadi kesalahan saat menghapus data." });
+        } else {
+          setAlertState({ isOpen: true, type: "error", title: "Hapus data gagal!", message: "Terjadi kesalahan saat menghapus data." });
+        }
+      }
+    } catch {
+      if (role === "admin_pusat") {
+        setAlertState({ isOpen: true, type: "error", title: "Hapus data gagal!", message: "Terjadi kesalahan sistem." });
+      } else {
+        setAlertState({ isOpen: true, type: "error", title: "Terjadi kesalahan!", message: "Terjadi kesalahan sistem." });
+      }
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   const toggleFilter = (tag: string) => {
     setSelectedFilters((previous) =>
@@ -513,6 +557,7 @@ export default function PengedaranLuarPage() {
                           <button
                             className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#F0A5A5] bg-[#F9D7D7] text-[#D85C5C] shadow-sm transition-colors hover:bg-[#f4c2c2]"
                             title="Hapus"
+                            onClick={() => setDeleteTargetId(row.id)}
                           >
                             <Trash2 className="h-4 w-4" />
                           </button>
@@ -583,6 +628,51 @@ export default function PengedaranLuarPage() {
         selectedColumns={selectedFilters}
         columnConfig={columnConfig}
         title="Data Pengedar TSL Luar Negeri"
+      />
+
+      {/* Delete Confirm Modal */}
+      {deleteTargetId !== null && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/35 p-4 backdrop-blur-[2px]">
+          <div className="relative w-full max-w-sm rounded-[22px] bg-white px-6 py-5 shadow-[0_20px_50px_-15px_rgba(0,0,0,0.28)]">
+            <div className="flex items-start gap-3 pr-8">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-red-50">
+                <Trash2 className="h-5 w-5 text-red-600" strokeWidth={2.5} />
+              </div>
+              <div className="pt-0.5">
+                <h3 className="text-[15px] font-semibold text-gray-900">Hapus Data Pengedaran LN</h3>
+              </div>
+            </div>
+            <p className="mt-4 text-[14px] text-gray-700">
+              Apakah Anda yakin ingin menghapus data ini? Tindakan ini tidak dapat dibatalkan.
+            </p>
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setDeleteTargetId(null)}
+                disabled={isDeleting}
+                className="inline-flex items-center justify-center rounded-lg border border-gray-200 bg-white px-4 py-2 text-[13px] font-semibold text-gray-700 transition-colors hover:bg-gray-50 disabled:opacity-50"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={handleDelete}
+                disabled={isDeleting}
+                className="inline-flex items-center justify-center rounded-lg bg-red-600 px-4 py-2 text-[13px] font-semibold text-white transition-colors hover:bg-red-700 disabled:opacity-50"
+              >
+                {isDeleting ? "Menghapus..." : "Hapus"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <AddDataAlertModal
+        isOpen={alertState.isOpen}
+        type={alertState.type}
+        title={alertState.title}
+        message={alertState.message}
+        onClose={() => setAlertState((prev) => ({ ...prev, isOpen: false }))}
       />
     </div>
   );

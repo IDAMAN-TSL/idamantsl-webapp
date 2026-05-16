@@ -11,6 +11,7 @@ import {
   FileText,
   MapPin,
 } from "lucide-react";
+import { AddDataAlertModal } from "@/components/layout/AddDataAlertModal";
 
 interface AddDataModalProps {
   isOpen: boolean;
@@ -27,6 +28,10 @@ export function AddDataModal({ isOpen, onClose }: Readonly<AddDataModalProps>) {
     akhirMasaBerlaku: "",
   });
   const [errors] = useState<Record<string, string>>({});
+  const [alertState, setAlertState] = useState<{isOpen: boolean; type: "success" | "error"; title?: string; message?: string}>({
+    isOpen: false,
+    type: "success"
+  });
 
   const setField = (key: keyof typeof formData, value: string) =>
     setFormData((previous) => ({ ...previous, [key]: value }));
@@ -43,10 +48,23 @@ export function AddDataModal({ isOpen, onClose }: Readonly<AddDataModalProps>) {
   };
 
   const handleSubmit = () => {
-    closeAndReset();
+    const userStr = globalThis.window === undefined ? null : localStorage.getItem("user");
+    const userRole = userStr ? JSON.parse(userStr).role : "";
+
+    if (userRole === "admin_pusat") {
+      setAlertState({ isOpen: true, type: "success" });
+    } else {
+      setAlertState({ 
+        isOpen: true, 
+        type: "error", 
+        title: "Tambah data gagal!", 
+        message: "Terjadi kesalahan saat menambah data." 
+      });
+    }
   };
 
   return (
+    <>
     <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/40 p-4 backdrop-blur-sm md:p-8">
       <div className="relative w-full max-w-4xl rounded-[14px] bg-white px-6 py-6 shadow-[0_24px_80px_-20px_rgba(0,0,0,0.35)] md:px-8 md:py-7">
         <button
@@ -212,6 +230,19 @@ export function AddDataModal({ isOpen, onClose }: Readonly<AddDataModalProps>) {
         </div>
       </div>
     </div>
+    <AddDataAlertModal 
+      isOpen={alertState.isOpen}
+      type={alertState.type}
+      title={alertState.title}
+      message={alertState.message}
+      onClose={() => {
+        setAlertState((prev) => ({ ...prev, isOpen: false }));
+        if (alertState.type === "success") {
+          closeAndReset();
+        }
+      }}
+    />
+    </>
   );
 }
 

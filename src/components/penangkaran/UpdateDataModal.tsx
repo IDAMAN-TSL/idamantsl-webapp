@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { X, Calendar, ChevronDown, FileText, MapPin, Pencil } from "lucide-react";
+import { AddDataAlertModal } from "@/components/layout/AddDataAlertModal";
 
 interface PenangkaranData {
   id: number;
@@ -38,6 +39,10 @@ export function UpdateDataModal({ isOpen, onClose, data, onSuccess }: Readonly<U
   const [selectedFileName, setSelectedFileName] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [alertState, setAlertState] = useState<{isOpen: boolean; type: "success" | "error"; title?: string; message?: string}>({
+    isOpen: false,
+    type: "success"
+  });
   const [referensiList, setReferensiList] = useState<{
     id: number;
     namaDaerah: string;
@@ -132,6 +137,17 @@ export function UpdateDataModal({ isOpen, onClose, data, onSuccess }: Readonly<U
     fileInputRef.current?.click();
   };
 
+  const getUpdateErrorMessage = async (res: Response) => {
+    const err = await res.json().catch(() => null);
+    if (err?.message) return err.message;
+
+    if (res.status === 401) return "Sesi Anda telah berakhir. Silakan login kembali.";
+    if (res.status === 403) return "Anda tidak memiliki izin untuk mengubah data.";
+    if (res.status === 404) return "Data tidak ditemukan. Mungkin telah dihapus.";
+
+    return `Gagal memperbarui data (${res.status})`;
+  };
+
   const formatFooterDate = (value?: string | null) => {
     if (!value) return "dd mm yyyy";
     return new Date(value).toLocaleDateString("id-ID", {
@@ -197,16 +213,66 @@ export function UpdateDataModal({ isOpen, onClose, data, onSuccess }: Readonly<U
         }),
       });
       const result = await res.json();
+      
+      const userStr = globalThis.window === undefined ? null : localStorage.getItem("user");
+      const userRole = userStr ? JSON.parse(userStr).role : "";
+
       if (result.success) {
-        if (onSuccess) onSuccess();
-        onClose();
-      } else if (result.errors && typeof result.errors === "object") {
-        setErrors(result.errors);
+        if (userRole === "admin_pusat") {
+          setAlertState({ 
+            isOpen: true, 
+            type: "success",
+            title: "Perbarui data berhasil!",
+            message: "Data berhasil diperbarui di database."
+          });
+        } else {
+          setAlertState({ 
+            isOpen: true, 
+            type: "success",
+            title: "Perbarui data diajukan!",
+            message: "Data diverifikasi terlebih dahulu oleh Admin Pusat."
+          });
+        }
       } else {
-        alert(result.message || "Gagal menyimpan perubahan");
+        if (userRole === "admin_pusat") {
+          setAlertState({ 
+            isOpen: true, 
+            type: "error",
+            title: "Perbarui data gagal!",
+            message: result.message || "Pastikan semua data terisi dengan benar."
+          });
+        } else {
+          if (result.errors && typeof result.errors === "object") {
+            setErrors(result.errors);
+          } else {
+            setAlertState({ 
+              isOpen: true, 
+              type: "error",
+              title: "Perbarui data gagal!",
+              message: result.message || "Terjadi kesalahan saat menyimpan perubahan."
+            });
+          }
+        }
       }
     } catch {
-      alert("Terjadi kesalahan sistem");
+      const userStr = globalThis.window === undefined ? null : localStorage.getItem("user");
+      const userRole = userStr ? JSON.parse(userStr).role : "";
+      
+      if (userRole === "admin_pusat") {
+        setAlertState({ 
+          isOpen: true, 
+          type: "error",
+          title: "Perbarui data gagal!",
+          message: "Terjadi kesalahan sistem."
+        });
+      } else {
+        setAlertState({ 
+          isOpen: true, 
+          type: "error",
+          title: "Terjadi kesalahan!",
+          message: "Terjadi kesalahan sistem."
+        });
+      }
     } finally {
       setIsLoading(false);
     }
@@ -457,6 +523,19 @@ export function UpdateDataModal({ isOpen, onClose, data, onSuccess }: Readonly<U
           onChange={(event) => setSelectedFileName(event.target.files?.[0]?.name ?? "")}
         />
       </div>
+      <AddDataAlertModal 
+        isOpen={alertState.isOpen}
+        type={alertState.type}
+        title={alertState.title}
+        message={alertState.message}
+        onClose={() => {
+          setAlertState((prev) => ({ ...prev, isOpen: false }));
+          if (alertState.type === "success") {
+            if (onSuccess) onSuccess();
+            onClose();
+          }
+        }}
+      />
     </div>
   );
 }
