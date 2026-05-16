@@ -17,6 +17,7 @@ import { VerifikasiDetailModal } from "@/components/verifikasi/VerifikasiDetailM
 import FilterPopover from "@/components/verifikasi/FilterPopover";
 import { ViewDataModal } from "@/components/referensi-tsl/ViewDataModal";
 import { DetailDataModal as PenangkaranDetailModal } from "@/components/penangkaran/DetailDataModal";
+import { AddDataAlertModal } from "@/components/layout/AddDataAlertModal";
 
 type VerifikasiStatus = "Menunggu" | "Disetujui" | "Ditolak";
 
@@ -46,7 +47,7 @@ const formatJenisPengajuan = (jenis: string | undefined) => {
   if (jenis === "tambah") return "Tambah";
   if (jenis === "perbarui") return "Perbarui";
   if (jenis === "hapus") return "Hapus";
-  return jenis || "-";
+  return "Tambah"; // Default jika tidak ada data spesifik
 };
 
 const formatDataPengajuan = (tabelTarget: string) => {
@@ -123,6 +124,10 @@ export default function VerifikasiPage() {
   const [selectedRows, setSelectedRows] = useState<string[]>([]);
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const filterButtonRef = useRef<HTMLDivElement | null>(null);
+  const [alertState, setAlertState] = useState<{isOpen: boolean; type: "success" | "error"; title?: string; message?: string}>({
+    isOpen: false,
+    type: "success"
+  });
 
   const [selectedColumns, setSelectedColumns] = useState<string[]>([
     "tanggalPengajuan",
@@ -265,12 +270,31 @@ export default function VerifikasiPage() {
           userMap.set(u.id, peranLengkap);
         });
 
+        const logJenisMap = new Map<string, string>();
+        if (resultLog?.data) {
+          const sortedLogs = [...resultLog.data].sort(
+            (a, b) =>
+              new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+          );
+
+          sortedLogs.forEach((item: any) => {
+            const rowId = `${item.tabelTarget}-${item.targetId}`;
+            // Simpan jenisPengajuan dari log terbaru (karena sudah di-sort descending berdasar tanggal)
+            if (!logJenisMap.has(rowId)) {
+              logJenisMap.set(rowId, formatJenisPengajuan(item.jenisPengajuan));
+            }
+          });
+        }
+
         const newRows: VerifikasiRow[] = [];
         const processedIds = new Set<string>();
 
         if (resultPending?.data) {
           const addItems = (items: any[]) => {
             items.forEach((item) => {
+              const peran = userMap.get(item.createdBy) || "-";
+              if (peran === "Admin Pusat") return;
+
               const rowId = `${item.tabelTarget}-${item.id}`;
               processedIds.add(rowId);
 
@@ -291,7 +315,7 @@ export default function VerifikasiPage() {
                 ),
                 jenisPengajuan: jenis,
                 dataPengajuan: formatDataPengajuan(item.tabelTarget),
-                peran: userMap.get(item.createdBy) || "-",
+                peran: peran,
                 status: "Menunggu",
                 rawData: item,
               });
@@ -304,6 +328,9 @@ export default function VerifikasiPage() {
         if (resultApproved?.data) {
           const addItems = (items: any[]) => {
             items.forEach((item) => {
+              const peran = userMap.get(item.createdBy) || "-";
+              if (peran === "Admin Pusat") return;
+
               const rowId = `${item.tabelTarget}-${item.id}`;
               processedIds.add(rowId);
               newRows.push({
@@ -313,9 +340,9 @@ export default function VerifikasiPage() {
                 tanggalPengajuan: formatDisplayDate(
                   item.updatedAt || item.createdAt,
                 ),
-                jenisPengajuan: "-",
+                jenisPengajuan: logJenisMap.get(rowId) || "Tambah",
                 dataPengajuan: formatDataPengajuan(item.tabelTarget),
-                peran: userMap.get(item.createdBy) || "-",
+                peran: peran,
                 status: "Disetujui",
                 rawData: item,
               });
@@ -343,7 +370,7 @@ export default function VerifikasiPage() {
                   tanggalPengajuan: formatDisplayDate(item.createdAt),
                   jenisPengajuan: formatJenisPengajuan(item.jenisPengajuan),
                   dataPengajuan: formatDataPengajuan(item.tabelTarget),
-                  peran: userMap.get(item.diajukanOleh) || "-",
+                  peran: userMap.get(item.createdBy) || "-",
                   status: "Ditolak",
                   alasanPenolakan: item.catatan,
                   rawData: item,
@@ -400,13 +427,17 @@ export default function VerifikasiPage() {
         //   disetujui + pendingChanges null       → "-" (sudah dibersihkan saat approve)
         const referensiList: any[] = resultReferensi?.data || [];
         referensiList
-          .filter((item: any) => item.createdBy === currentUserId)
+          .filter((item: any) => {
+            const pc = item.pendingChanges as Record<string, unknown> | null | undefined;
+            const diajukanOleh = pc?.diajukanOleh as number | undefined;
+            return item.createdBy === currentUserId || diajukanOleh === currentUserId;
+          })
           .forEach((item: any) => {
             const pc = item.pendingChanges as
               | Record<string, unknown>
               | null
               | undefined;
-            let jenisPengajuan = "-";
+            let jenisPengajuan = "Tambah";
             if (pc?._action === "delete") {
               jenisPengajuan = "Hapus";
             } else if (pc && Object.keys(pc).length > 0) {
@@ -451,11 +482,13 @@ export default function VerifikasiPage() {
         const penangkaranList: any[] = resultPenangkaran?.data || [];
         penangkaranList
           .filter((item: any) => {
+            const pc = item.pendingChanges as Record<string, unknown> | null | undefined;
+            const diajukanOleh = pc?.diajukanOleh as number | undefined;
             const createdById =
               typeof item.createdBy === "object"
                 ? item.createdBy?.id
                 : item.createdBy;
-            return createdById === currentUserId;
+            return createdById === currentUserId || diajukanOleh === currentUserId;
           })
           .forEach((item: any) => {
             // updatedBy konsisten di semua status (tidak dihapus saat approve/tolak)
@@ -1146,14 +1179,29 @@ export default function VerifikasiPage() {
                   }),
                 });
                 if (res.ok) {
-                  fetchVerifikasi();
+                  setAlertState({
+                    isOpen: true,
+                    type: "success",
+                    title: "Verifikasi berhasil!",
+                    message: "Data telah disetujui."
+                  });
                 } else {
                   const errorData = await res.json();
-                  alert(`Gagal menyetujui data: ${errorData.message}`);
+                  setAlertState({
+                    isOpen: true,
+                    type: "error",
+                    title: "Verifikasi gagal!",
+                    message: errorData.message || "Gagal menyetujui data."
+                  });
                 }
               } catch (error) {
                 console.error(error);
-                alert("Terjadi kesalahan pada server");
+                setAlertState({
+                  isOpen: true,
+                  type: "error",
+                  title: "Terjadi Kesalahan",
+                  message: "Terjadi kesalahan pada server"
+                });
               }
             }
           }
@@ -1183,14 +1231,29 @@ export default function VerifikasiPage() {
                   }),
                 });
                 if (res.ok) {
-                  fetchVerifikasi();
+                  setAlertState({
+                    isOpen: true,
+                    type: "success",
+                    title: "Verifikasi berhasil!",
+                    message: "Data telah ditolak."
+                  });
                 } else {
                   const errorData = await res.json();
-                  alert(`Gagal menolak data: ${errorData.message}`);
+                  setAlertState({
+                    isOpen: true,
+                    type: "error",
+                    title: "Verifikasi gagal!",
+                    message: errorData.message || "Gagal menolak data."
+                  });
                 }
               } catch (error) {
                 console.error(error);
-                alert("Terjadi kesalahan pada server");
+                setAlertState({
+                  isOpen: true,
+                  type: "error",
+                  title: "Terjadi Kesalahan",
+                  message: "Terjadi kesalahan pada server"
+                });
               }
             }
           }
@@ -1203,6 +1266,19 @@ export default function VerifikasiPage() {
         isOpen={isRejectReasonModalOpen}
         onClose={() => setIsRejectReasonModalOpen(false)}
         reason={rejectReason}
+      />
+
+      <AddDataAlertModal 
+        isOpen={alertState.isOpen}
+        type={alertState.type}
+        title={alertState.title}
+        message={alertState.message}
+        onClose={() => {
+          setAlertState((prev) => ({ ...prev, isOpen: false }));
+          if (alertState.type === "success") {
+            fetchVerifikasi();
+          }
+        }}
       />
     </div>
   );

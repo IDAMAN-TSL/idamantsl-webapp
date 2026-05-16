@@ -11,6 +11,8 @@ import {
   FileText,
   MapPin,
 } from "lucide-react";
+import { AddDataAlertModal } from "@/components/layout/AddDataAlertModal";
+import { BidangConfirmModal } from "@/components/layout/BidangConfirmModal";
 
 interface AddDataModalProps {
   isOpen: boolean;
@@ -42,6 +44,10 @@ export function AddDataModal({ isOpen, onClose, onSuccess }: Readonly<AddDataMod
     indukanBetina: "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [alertState, setAlertState] = useState<{isOpen: boolean; type: "success" | "error"; title?: string; message?: string}>({
+    isOpen: false,
+    type: "success"
+  });
 
   const setField = (key: keyof typeof formData, value: string) =>
     setFormData((prev) => ({ ...prev, [key]: value }));
@@ -126,7 +132,38 @@ export function AddDataModal({ isOpen, onClose, onSuccess }: Readonly<AddDataMod
     onClose();
   };
 
+  const [showBidangConfirm, setShowBidangConfirm] = useState(false);
+
   const handleSubmit = async () => {
+    const userStr = globalThis.window === undefined ? null : localStorage.getItem("user");
+    const userRole = userStr ? JSON.parse(userStr).role : "";
+    // Validasi dulu sebelum tampilkan konfirmasi
+    const eCheck: Record<string, string> = {};
+    const isEmptyCheck = (v?: string) => !v || v.trim() === "";
+    Object.keys(formData).forEach((k) => {
+      const key = k as keyof typeof formData;
+      if (isEmptyCheck(formData[key])) eCheck[key] = "Field ini wajib diisi";
+    });
+    if (!/^08\d+$/.test(formData.nomorTelepon)) eCheck.nomorTelepon = "Nomor telepon harus numerik dan diawali 08";
+    if (Object.keys(eCheck).length > 0) {
+      setErrors(eCheck);
+      return;
+    }
+    if (userRole === "bidang_wilayah") {
+      setShowBidangConfirm(true);
+      return;
+    }
+    await doSubmit();
+  };
+
+  const handleBidangConfirm = async () => {
+    setShowBidangConfirm(false);
+    await doSubmit();
+  };
+
+  const doSubmit = async () => {
+    const userStr = globalThis.window === undefined ? null : localStorage.getItem("user");
+    const userRole = userStr ? JSON.parse(userStr).role : "";
     try {
       setIsLoading(true);
       // full client-side validation before submit (all fields required)
@@ -177,24 +214,55 @@ export function AddDataModal({ isOpen, onClose, onSuccess }: Readonly<AddDataMod
         body: JSON.stringify(payload),
       });
       const result = await res.json();
+      
       if (result.success) {
-        if (onSuccess) onSuccess();
-        closeAndReset();
-      } else if (result.errors && typeof result.errors === "object") {
-        // show server-side validation if provided
-        setErrors(result.errors);
+        if (userRole === "admin_pusat") {
+          setAlertState({ isOpen: true, type: "success" });
+        } else {
+          setAlertState({ 
+            isOpen: true, 
+            type: "success",
+            title: "Tambah data diajukan!",
+            message: "Data diverifikasi terlebih dahulu oleh Admin Pusat."
+          });
+        }
       } else {
-        alert(result.message || "Gagal menambah data");
+        if (userRole === "admin_pusat") {
+          setAlertState({ isOpen: true, type: "error", message: result.message || "Pastikan semua data terisi dengan benar." });
+        } else {
+          if (result.errors && typeof result.errors === "object") {
+            setErrors(result.errors);
+          } else {
+            setAlertState({ 
+              isOpen: true, 
+              type: "error",
+              title: "Tambah data gagal!",
+              message: result.message || "Terjadi kesalahan saat menambah data."
+            });
+          }
+        }
       }
     } catch (error) {
       console.error("Error:", error);
-      alert("Terjadi kesalahan sistem");
+      if (userRole === "admin_pusat") {
+        const msg = error instanceof TypeError ? "Gagal terhubung ke server. Periksa koneksi internet Anda." : (error instanceof Error ? error.message : "Terjadi kesalahan sistem.");
+        setAlertState({ isOpen: true, type: "error", message: msg });
+      } else {
+        const msg = error instanceof TypeError ? "Gagal terhubung ke server. Periksa koneksi internet Anda." : (error instanceof Error ? error.message : "Terjadi kesalahan sistem.");
+        setAlertState({ 
+          isOpen: true, 
+          type: "error",
+          title: "Terjadi kesalahan!",
+          message: msg
+        });
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
+    <>
     <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/40 p-4 backdrop-blur-sm md:p-8">
       <div className="relative w-full max-w-4xl rounded-[14px] bg-white px-6 py-6 shadow-[0_24px_80px_-20px_rgba(0,0,0,0.35)] md:px-8 md:py-7">
         <button
@@ -237,7 +305,7 @@ export function AddDataModal({ isOpen, onClose, onSuccess }: Readonly<AddDataMod
             <div className="flex flex-col gap-4">
               <Field label="Unit Penangkar" value={formData.namaPenangkaran} onChange={(v) => setField("namaPenangkaran", v)} required error={errors.namaPenangkaran} />
               <Field label="Nama Direktur / Penanggung Jawab" value={formData.namaDirektur} onChange={(v) => setField("namaDirektur", v)} required error={errors.namaDirektur} />
-              <Field label="Nomor Telepon" value={formData.nomorTelepon} onChange={(v) => setField("nomorTelepon", v.replaceAll(/\D/g, ""))} required error={errors.nomorTelepon} />
+              <Field label="Nomor Telepon" value={formData.nomorTelepon} placeholder="Contoh: 08......" onChange={(v) => setField("nomorTelepon", v.replaceAll(/\D/g, ""))} required error={errors.nomorTelepon} />
               <Field label="Alamat Penangkaran" withLocationIcon value={formData.alamatPenangkaran} onChange={(v) => setField("alamatPenangkaran", v)} required error={errors.alamatPenangkaran} />
             </div>
 
@@ -343,6 +411,27 @@ export function AddDataModal({ isOpen, onClose, onSuccess }: Readonly<AddDataMod
         </div>
       </div>
     </div>
+    <AddDataAlertModal 
+      isOpen={alertState.isOpen}
+      type={alertState.type}
+      title={alertState.title}
+      message={alertState.message}
+      onClose={() => {
+        setAlertState((prev) => ({ ...prev, isOpen: false }));
+        if (alertState.type === "success") {
+          if (onSuccess) onSuccess();
+          closeAndReset();
+        }
+      }}
+    />
+    <BidangConfirmModal
+      isOpen={showBidangConfirm}
+      type="add"
+      onClose={() => setShowBidangConfirm(false)}
+      onConfirm={handleBidangConfirm}
+      isLoading={isLoading}
+    />
+    </>
   );
 }
 
@@ -353,9 +442,10 @@ type FieldProps = Readonly<{
   onChange: (v: string) => void;
   required?: boolean;
   error?: string;
+  placeholder?: string;
 }>;
 
-function Field({ label, withLocationIcon = false, value, onChange, required = false, error }: FieldProps) {
+function Field({ label, withLocationIcon = false, value, onChange, required = false, error, placeholder }: FieldProps) {
   return (
     <div className="flex flex-col gap-1.5">
       <label className="text-[12px] text-gray-500">
@@ -366,7 +456,8 @@ function Field({ label, withLocationIcon = false, value, onChange, required = fa
           type="text"
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className={`h-8 w-full rounded-[3px] bg-white px-3 text-[12px] text-gray-800 outline-none focus:ring-1 focus:ring-[#8E9E25] ${
+          placeholder={placeholder || `Masukkan ${label.toLowerCase()}`}
+          className={`h-8 w-full rounded-[3px] bg-white px-3 text-[12px] text-gray-800 outline-none placeholder:text-[#B0B0B0] focus:ring-1 focus:ring-[#8E9E25] ${
             withLocationIcon ? "pl-7" : ""
           } ${error ? "border border-red-500" : "border border-[#C7D0AF]"}`}
         />

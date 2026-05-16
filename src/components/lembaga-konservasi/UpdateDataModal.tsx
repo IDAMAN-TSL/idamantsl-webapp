@@ -2,6 +2,7 @@
 
 import React, { useRef, useState } from "react";
 import { Calendar, ChevronDown, FileText, MapPin, Pencil, X } from "lucide-react";
+import { AddDataAlertModal } from "@/components/layout/AddDataAlertModal";
 
 interface UpdateDataModalProps {
   isOpen: boolean;
@@ -26,6 +27,10 @@ const JENIS_TSL_OPTIONS = ["Mamalia", "Aves", "Reptilia", "Amphibia", "Pisces"];
 export function UpdateDataModal({ isOpen, onClose, data }: Readonly<UpdateDataModalProps>) {
   const [selectedFileName, setSelectedFileName] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [alertState, setAlertState] = useState<{isOpen: boolean; type: "success" | "error"; title?: string; message?: string}>({
+    isOpen: false,
+    type: "success"
+  });
 
   if (!isOpen) return null;
 
@@ -46,6 +51,28 @@ export function UpdateDataModal({ isOpen, onClose, data }: Readonly<UpdateDataMo
       month: "2-digit",
       year: "numeric",
     });
+  };
+
+  const handleSave = () => {
+    // Currently UI only, simulate validation error to show the alert
+    const userStr = globalThis.window === undefined ? null : localStorage.getItem("user");
+    const userRole = userStr ? JSON.parse(userStr).role : "";
+    
+    if (userRole === "admin_pusat") {
+      setAlertState({ 
+        isOpen: true, 
+        type: "error",
+        title: "Perbarui data gagal!",
+        message: "Pastikan semua data terisi dengan benar."
+      });
+    } else {
+      setAlertState({ 
+        isOpen: true, 
+        type: "error",
+        title: "Perbarui data gagal!",
+        message: "Terjadi kesalahan saat menyimpan perubahan."
+      });
+    }
   };
 
   return (
@@ -132,7 +159,7 @@ export function UpdateDataModal({ isOpen, onClose, data }: Readonly<UpdateDataMo
 
             <button
               type="button"
-              onClick={handleClose}
+              onClick={handleSave}
               className="inline-flex items-center gap-2 rounded-md bg-[#F59F00] px-4 py-2 text-[12px] font-medium text-white transition-colors hover:bg-[#d98b00]"
             >
               <Pencil className="h-4 w-4" strokeWidth={2.2} />
@@ -149,6 +176,18 @@ export function UpdateDataModal({ isOpen, onClose, data }: Readonly<UpdateDataMo
           onChange={(event) => setSelectedFileName(event.target.files?.[0]?.name ?? "")}
         />
       </div>
+      <AddDataAlertModal 
+        isOpen={alertState.isOpen}
+        type={alertState.type}
+        title={alertState.title}
+        message={alertState.message}
+        onClose={() => {
+          setAlertState((prev) => ({ ...prev, isOpen: false }));
+          if (alertState.type === "success") {
+            onClose();
+          }
+        }}
+      />
     </div>
   );
 }

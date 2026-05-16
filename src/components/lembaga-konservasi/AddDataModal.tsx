@@ -11,6 +11,7 @@ import {
   FileText,
   MapPin,
 } from "lucide-react";
+import { AddDataAlertModal } from "@/components/layout/AddDataAlertModal";
 
 interface AddDataModalProps {
   isOpen: boolean;
@@ -40,6 +41,10 @@ export function AddDataModal({ isOpen, onClose, onSuccess }: Readonly<AddDataMod
     tslId: "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [alertState, setAlertState] = useState<{isOpen: boolean; type: "success" | "error"; title?: string; message?: string}>({
+    isOpen: false,
+    type: "success"
+  });
 
   const setField = (key: keyof typeof formData, value: string) =>
     setFormData((prev) => ({ ...prev, [key]: value }));
@@ -153,23 +158,51 @@ export function AddDataModal({ isOpen, onClose, onSuccess }: Readonly<AddDataMod
       });
       const result = await res.json();
       
+      const userStr = globalThis.window === undefined ? null : localStorage.getItem("user");
+      const userRole = userStr ? JSON.parse(userStr).role : "";
+
       if (result.success) {
-        if (onSuccess) onSuccess();
-        closeAndReset();
+        if (userRole === "admin_pusat") {
+          setAlertState({ isOpen: true, type: "success" });
+        } else {
+          setAlertState({
+            isOpen: true,
+            type: "success",
+            title: "Tambah data diajukan!",
+            message: "Data diverifikasi terlebih dahulu oleh Admin Pusat."
+          });
+        }
       } else if (result.errors && typeof result.errors === "object") {
-        setErrors(result.errors);
+        if (userRole === "admin_pusat") {
+          setAlertState({ isOpen: true, type: "error", message: result.message || "Terdapat kesalahan pada data yang diisi." });
+        } else {
+          setErrors(result.errors);
+        }
       } else {
-        alert(result.message || "Gagal menambah data");
+        if (userRole === "admin_pusat") {
+          setAlertState({ isOpen: true, type: "error", message: result.message || "Gagal menambah data." });
+        } else {
+          setAlertState({ isOpen: true, type: "error", title: "Tambah data gagal!", message: result.message || "Terjadi kesalahan saat menambah data." });
+        }
       }
     } catch (error) {
       console.error("Error:", error);
-      alert("Terjadi kesalahan sistem");
+      const userStr2 = globalThis.window === undefined ? null : localStorage.getItem("user");
+      const userRole2 = userStr2 ? JSON.parse(userStr2).role : "";
+      if (userRole2 === "admin_pusat") {
+        const msg = error instanceof TypeError ? "Gagal terhubung ke server. Periksa koneksi internet Anda." : (error instanceof Error ? error.message : "Terjadi kesalahan sistem.");
+        setAlertState({ isOpen: true, type: "error", message: msg });
+      } else {
+        const msg = error instanceof TypeError ? "Gagal terhubung ke server. Periksa koneksi internet Anda." : (error instanceof Error ? error.message : "Terjadi kesalahan sistem.");
+        setAlertState({ isOpen: true, type: "error", title: "Terjadi kesalahan!", message: msg });
+      }
     } finally {
       setIsLoading(false);
     }
   }
 
   return (
+    <>
     <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/40 p-4 backdrop-blur-sm md:p-8">
       <div className="relative w-full max-w-4xl rounded-[14px] bg-white px-6 py-6 shadow-[0_24px_80px_-20px_rgba(0,0,0,0.35)] md:px-8 md:py-7">
         <button
@@ -407,6 +440,20 @@ export function AddDataModal({ isOpen, onClose, onSuccess }: Readonly<AddDataMod
         </div>
       </div>
     </div>
+    <AddDataAlertModal 
+      isOpen={alertState.isOpen}
+      type={alertState.type}
+      title={alertState.title}
+      message={alertState.message}
+      onClose={() => {
+        setAlertState((prev) => ({ ...prev, isOpen: false }));
+        if (alertState.type === "success") {
+          if (onSuccess) onSuccess();
+          closeAndReset();
+        }
+      }}
+    />
+    </>
   );
 }
 

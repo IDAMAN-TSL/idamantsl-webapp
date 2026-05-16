@@ -3,10 +3,11 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Mail, Lock, EyeOff, Eye, Loader2 } from "lucide-react";
 import LogoIcon from "../../assets/icon/Logo.svg";
 import JunglePicture from "../../assets/picture/Gambar.jpg";
+import { LoginAlertModal } from "../../components/layout/LoginAlertModal";
 
 export default function Home() {
   const router = useRouter();
@@ -15,6 +16,26 @@ export default function Home() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+  const [alertState, setAlertState] = useState<{isOpen: boolean; type: "success" | "error"}>({
+    isOpen: false,
+    type: "success"
+  });
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      router.replace("/dashboard");
+    }
+  }, [router]);
+
+  useEffect(() => {
+    if (alertState.isOpen && alertState.type === "success") {
+      const timer = setTimeout(() => {
+        router.push("/dashboard");
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [alertState.isOpen, alertState.type, router]);
 
   const handleLogin = async (e: React.SyntheticEvent) => {
     e.preventDefault();
@@ -41,19 +62,32 @@ export default function Home() {
         localStorage.setItem("token", data.data.token);
         localStorage.setItem("user", JSON.stringify(data.data.user));
         
-        router.push("/dashboard");
+        setAlertState({ isOpen: true, type: "success" });
       } else {
         throw new Error(data.message || "Gagal login");
       }
     } catch (error: any) {
       setErrorMsg(error.message || "Terjadi kesalahan pada server");
+      setAlertState({ isOpen: true, type: "error" });
     } finally {
       setIsLoading(false);
     }
   };
 
+  const handleCloseAlert = () => {
+    setAlertState((prev) => ({ ...prev, isOpen: false }));
+    if (alertState.type === "success") {
+      router.push("/dashboard");
+    }
+  };
+
   return (
     <div className="relative min-h-screen flex items-center justify-center overflow-hidden font-sans">
+      <LoginAlertModal 
+        isOpen={alertState.isOpen} 
+        type={alertState.type} 
+        onClose={handleCloseAlert} 
+      />
       {/* Background Image Overlay */}
       <div className="absolute inset-0 z-0">
         <Image 
@@ -84,13 +118,6 @@ export default function Home() {
             <p className="text-white/90 text-sm font-medium">Masuk untuk mengakses dashboard Anda</p>
           </div>
         </div>
-
-        {/* Error Message */}
-        {errorMsg && (
-          <div className="mb-4 p-3 bg-red-500/20 border border-red-500/50 rounded-xl flex items-center justify-center text-red-100 text-sm backdrop-blur-sm">
-            {errorMsg}
-          </div>
-        )}
 
         {/* Form */}
         <form className="space-y-6" onSubmit={handleLogin}>

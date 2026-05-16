@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { ChevronDown, Eye, EyeOff, MapPin, X } from "lucide-react";
+import { AddDataAlertModal } from "@/components/layout/AddDataAlertModal";
 
 interface AddUserModalProps {
   isOpen: boolean;
@@ -50,6 +51,10 @@ export function AddUserModal({ isOpen, onClose, onSuccess }: Readonly<AddUserMod
   const [isLoadingOptions, setIsLoadingOptions] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [alertState, setAlertState] = useState<{isOpen: boolean; type: "success" | "error"; message?: string}>({
+    isOpen: false,
+    type: "success"
+  });
 
   // Fetch wilayah data on modal open
   useEffect(() => {
@@ -201,30 +206,49 @@ export function AddUserModal({ isOpen, onClose, onSuccess }: Readonly<AddUserMod
       });
 
       const result = await res.json();
+      const userStr = globalThis.window === undefined ? null : localStorage.getItem("user");
+      const userRole = userStr ? JSON.parse(userStr).role : "";
+
       if (res.ok && (result?.success ?? true)) {
-        setFormData({
-          namaLengkap: "",
-          peran: "",
-          email: "",
-          password: "",
-          nomorTelepon: "",
-          alamatKantor: "",
-        });
-        if (onSuccess) onSuccess();
-        onClose();
-        setErrors({});
+        if (userRole === "admin_pusat") {
+          setAlertState({ isOpen: true, type: "success" });
+        } else {
+          setFormData({
+            namaLengkap: "",
+            peran: "",
+            email: "",
+            password: "",
+            nomorTelepon: "",
+            alamatKantor: "",
+          });
+          if (onSuccess) onSuccess();
+          onClose();
+          setErrors({});
+        }
       } else {
-        alert(result.message || "Gagal menambah pengguna");
+        if (userRole === "admin_pusat") {
+          setAlertState({ isOpen: true, type: "error", message: result.message || "Gagal menambah pengguna. Coba lagi." });
+        } else {
+          alert(result.message || "Gagal menambah pengguna");
+        }
       }
     } catch (error) {
       console.error("Gagal menambah pengguna", error);
-      alert("Terjadi kesalahan sistem");
+      const userStr2 = globalThis.window === undefined ? null : localStorage.getItem("user");
+      const userRole2 = userStr2 ? JSON.parse(userStr2).role : "";
+      if (userRole2 === "admin_pusat") {
+        const msg = error instanceof TypeError ? "Gagal terhubung ke server. Periksa koneksi internet Anda." : (error instanceof Error ? error.message : "Terjadi kesalahan sistem.");
+        setAlertState({ isOpen: true, type: "error", message: msg });
+      } else {
+        alert("Terjadi kesalahan sistem");
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
+    <>
     <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/40 p-4 backdrop-blur-sm md:p-8">
       <div className="relative w-full max-w-2xl rounded-xl bg-white px-6 py-6 shadow-[0_20px_60px_-20px_rgba(0,0,0,0.3)] md:px-8 md:py-7">
         <button
@@ -246,7 +270,7 @@ export function AddUserModal({ isOpen, onClose, onSuccess }: Readonly<AddUserMod
             <div className="flex flex-col gap-4">
               <Field
                 label="Nama Lengkap"
-                placeholder="Nama lengkap"
+                placeholder="Masukkan nama lengkap"
                 value={formData.namaLengkap}
                 onChange={(value) => handleInputChange("namaLengkap", value)}
                 required
@@ -255,7 +279,7 @@ export function AddUserModal({ isOpen, onClose, onSuccess }: Readonly<AddUserMod
               <Field
                 label="Email"
                 type="email"
-                placeholder="Email"
+                placeholder="Masukkan email"
                 value={formData.email}
                 onChange={(value) => handleInputChange("email", value)}
                 required
@@ -269,7 +293,7 @@ export function AddUserModal({ isOpen, onClose, onSuccess }: Readonly<AddUserMod
                   <input
                     id="add-user-password"
                     type={showPassword ? "text" : "password"}
-                    placeholder="Password"
+                    placeholder="Masukkan password"
                     value={formData.password}
                     onChange={(e) => handleInputChange("password", e.target.value)}
                     className={`h-8 w-full rounded-sm bg-white px-3 pr-9 text-[13px] text-[#252525] outline-none placeholder:text-[#B0B0B0] focus:border-[#8E9E25] focus:ring-1 focus:ring-[#8E9E25]/20 ${
@@ -289,6 +313,9 @@ export function AddUserModal({ isOpen, onClose, onSuccess }: Readonly<AddUserMod
                     )}
                   </button>
                 </div>
+                <p className="text-[11px] text-[#8A8A8A]">
+                  Minimal 8 karakter, mengandung huruf kapital dan angka.
+                </p>
                 {errors.password && <p className="text-[11px] text-red-600">{errors.password}</p>}
               </div>
             </div>
@@ -305,7 +332,7 @@ export function AddUserModal({ isOpen, onClose, onSuccess }: Readonly<AddUserMod
               />
               <Field
                 label="Nomor Telepon"
-                placeholder="Nomor telepon"
+                placeholder="Contoh: 08......"
                 value={formData.nomorTelepon}
                 onChange={(value) => handleInputChange("nomorTelepon", value.replaceAll(/\D/g, ""))}
                 required
@@ -313,7 +340,7 @@ export function AddUserModal({ isOpen, onClose, onSuccess }: Readonly<AddUserMod
               />
               <FieldWithIcon
                 label="Alamat Kantor"
-                placeholder="Alamat kantor"
+                placeholder="Masukkan alamat kantor"
                 value={formData.alamatKantor}
                 onChange={(value) => handleInputChange("alamatKantor", value)}
                 required
@@ -342,6 +369,28 @@ export function AddUserModal({ isOpen, onClose, onSuccess }: Readonly<AddUserMod
         </div>
       </div>
     </div>
+    <AddDataAlertModal 
+      isOpen={alertState.isOpen}
+      type={alertState.type}
+      message={alertState.message}
+      onClose={() => {
+        setAlertState((prev) => ({ ...prev, isOpen: false }));
+        if (alertState.type === "success") {
+          setFormData({
+            namaLengkap: "",
+            peran: "",
+            email: "",
+            password: "",
+            nomorTelepon: "",
+            alamatKantor: "",
+          });
+          if (onSuccess) onSuccess();
+          onClose();
+          setErrors({});
+        }
+      }}
+    />
+    </>
   );
 }
 

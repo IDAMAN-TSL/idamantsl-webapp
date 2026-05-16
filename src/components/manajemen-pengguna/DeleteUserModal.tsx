@@ -12,6 +12,7 @@ interface DeleteUserModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  onDeleteAlert?: (type: "success" | "error", title: string, message: string) => void;
   userData: UserData | null;
 }
 
@@ -19,6 +20,7 @@ export function DeleteUserModal({
   isOpen,
   onClose,
   onSuccess,
+  onDeleteAlert,
   userData,
 }: Readonly<DeleteUserModalProps>) {
   const [isLoading, setIsLoading] = useState(false);
@@ -27,6 +29,8 @@ export function DeleteUserModal({
 
   const handleDelete = async () => {
     if (!userData) return;
+    const userStr = globalThis.window === undefined ? null : localStorage.getItem("user");
+    const role = userStr ? JSON.parse(userStr).role : "";
     try {
       setIsLoading(true);
       const token = localStorage.getItem("token");
@@ -41,12 +45,33 @@ export function DeleteUserModal({
       if (res.ok) {
         onSuccess();
         onClose();
+        if (role === "admin_pusat" && onDeleteAlert) {
+          onDeleteAlert("success", "Hapus data berhasil!", "Data pengguna berhasil dihapus dari database.");
+        }
       } else {
-        alert("Gagal menghapus pengguna");
+        let errorMessage = "Gagal menghapus pengguna.";
+        try {
+          const result = await res.json();
+          if (result?.message) errorMessage = result.message;
+        } catch {
+          // response bukan JSON, gunakan pesan default
+        }
+        if (role === "admin_pusat" && onDeleteAlert) {
+          onDeleteAlert("error", "Hapus data gagal!", errorMessage);
+        } else {
+          alert(errorMessage);
+        }
       }
     } catch (error) {
       console.error("Gagal menghapus:", error);
-      alert("Terjadi kesalahan sistem");
+      const errMsg = error instanceof TypeError
+        ? "Gagal terhubung ke server. Periksa koneksi internet Anda."
+        : (error instanceof Error ? error.message : "Terjadi kesalahan sistem.");
+      if (role === "admin_pusat" && onDeleteAlert) {
+        onDeleteAlert("error", "Hapus data gagal!", errMsg);
+      } else {
+        alert(errMsg);
+      }
     } finally {
       setIsLoading(false);
     }
